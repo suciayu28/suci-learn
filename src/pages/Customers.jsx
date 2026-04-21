@@ -23,34 +23,84 @@ const Customers = () => {
         </button>
       </PageHeader>
 
+     {/* MODAL ADD CUSTOMER DENGAN EFEK BLUR */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Add New Customer</h2>
-            <div className="space-y-3 text-left">
-              <label className="text-sm font-semibold">Customer ID</label>
-              <input type="text" placeholder="Auto-generated" className="w-full p-3 border rounded-xl bg-gray-50" disabled />
-              <label className="text-sm font-semibold">Name</label>
-              <input type="text" placeholder="Full Name" className="w-full p-3 border rounded-xl" />
-              <label className="text-sm font-semibold">Email</label>
-              <input type="email" placeholder="email@mail.com" className="w-full p-3 border rounded-xl" />
-              <label className="text-sm font-semibold">Phone</label>
-              <input type="text" placeholder="0812..." className="w-full p-3 border rounded-xl" />
-              <label className="text-sm font-semibold">Loyalty</label>
-              <select className="w-full p-3 border rounded-xl">
-                <option>Bronze</option>
-                <option>Silver</option>
-                <option>Gold</option>
-              </select>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-4"
+          onClick={() => setShowForm(false)}
+        >
+          <div 
+            className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl border border-white/50 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add New Customer</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-bold text-gray-700 ml-1">Customer ID</label>
+                <input 
+                  type="text" 
+                  placeholder="Auto-generated" 
+                  className="w-full mt-1 p-3 border border-gray-100 rounded-2xl bg-gray-50 text-gray-400 outline-none cursor-not-allowed" 
+                  disabled 
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-gray-700 ml-1">Name</label>
+                <input 
+                  type="text" 
+                  placeholder="Full Name" 
+                  className="w-full mt-1 p-3 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all" 
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-gray-700 ml-1">Email</label>
+                <input 
+                  type="email" 
+                  placeholder="email@mail.com" 
+                  className="w-full mt-1 p-3 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all" 
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-gray-700 ml-1">Phone</label>
+                <input 
+                  type="text" 
+                  placeholder="0812..." 
+                  className="w-full mt-1 p-3 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all" 
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-gray-700 ml-1">Loyalty Level</label>
+                <select className="w-full mt-1 p-3 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all appearance-none bg-white">
+                  <option>Bronze</option>
+                  <option>Silver</option>
+                  <option>Gold</option>
+                </select>
+              </div>
             </div>
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold">Cancel</button>
-              <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold">Save</button>
+
+            <div className="flex gap-3 mt-8">
+              <button 
+                onClick={() => setShowForm(false)} 
+                className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => setShowForm(false)} 
+                className="flex-1 py-3 bg-green-500 text-white rounded-2xl font-bold shadow-lg shadow-green-200 hover:bg-green-600 active:scale-95 transition-all"
+              >
+                Save Customer
+              </button>
             </div>
           </div>
         </div>
       )}
-
+      
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto mt-6">
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b border-gray-100">

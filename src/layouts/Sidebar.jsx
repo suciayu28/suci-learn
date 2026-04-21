@@ -34,14 +34,14 @@ const Sidebar = () => {
           <li>
             <NavLink to="/orders" className={menuClass}>
               <FaClipboardList size={20} />
-              <span>Order List</span>
+              <span>Orders</span>
             </NavLink>
           </li>
 
           <li>
             <NavLink to="/customers" className={menuClass}>
               <FaFileAlt size={20} />
-              <span>Customer List</span>
+              <span>Customers</span>
             </NavLink>
           </li>
 
@@ -82,7 +82,16 @@ const Sidebar = () => {
           + Add Menu
         </button>
       </div>
-
+      
+{/* COPYRIGHT & BRANDING */}
+        <div className="mt-8 text-center">
+          <h2 className="text-[14px] font-bold text-gray-700 leading-tight">
+            Sedap Restaurant Admin Dashboard
+          </h2>
+          <p className="text-[11px] text-gray-400 mt-1">
+            &copy; 2025 All Right Reserved
+          </p>
+        </div>
     </div>
   );
 };

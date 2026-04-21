@@ -43,26 +43,32 @@ const Header = () => {
       </div>
 
       {/* MODAL SEARCH */}
+    
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30" 
+          // backdrop-blur-md: memberikan efek blur pada konten di belakangnya
+          // bg-white/30: memberikan lapisan putih transparan tipis agar blur lebih terlihat estetik
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white p-6 rounded-lg w-[400px] shadow-lg"
+            className="bg-white p-8 rounded-3xl w-[450px] shadow-2xl border border-white/50"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold mb-3">Search</h2>
+            <h2 className="text-xl font-bold mb-5 text-gray-800">Search</h2>
 
-            <input
-              type="text"
-              placeholder="Type something..."
-              className="border w-full px-3 py-2 rounded outline-none"
-            />
+            <div className="relative">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Apa yang ingin kamu cari?"
+                className="border border-gray-200 w-full px-5 py-3 rounded-2xl outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-lg"
+              />
+            </div>
 
             <button
               onClick={() => setOpen(false)}
-              className="mt-4 bg-green-500 text-white px-4 py-2 rounded w-full"
+              className="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-3 rounded-2xl w-full shadow-lg shadow-green-200 transition-all active:scale-95"
             >
               Close
             </button>
