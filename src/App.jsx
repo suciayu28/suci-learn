@@ -9,6 +9,14 @@ import Orders from "./pages/Orders";
 // Pastikan Anda meng-import ErrorPage yang sudah kita buat sebelumnya
 import ErrorPage from "./pages/NotFound";
 
+// --- IMPORT GAMBAR UNTUK ERROR PAGES ---
+import img400 from "./assets/400.png";
+import img401 from "./assets/401.png";
+import img403 from "./assets/403.png";
+import img404 from "./assets/404.png";
+
+// ----------------------------------------
+
 function App() {
   return (
     <>
@@ -19,12 +27,11 @@ function App() {
             <Header />
 
             <Routes>
-              {/* Rute lainnya (Dashboard, Orders, Customers, dll) */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/customers" element={<Customers />} />
 
-              {/* Rute Error yang sudah ada */}
+              {/* Rute Error dengan Gambar */}
               <Route
                 path="/400"
                 element={
@@ -32,6 +39,7 @@ function App() {
                     code="400"
                     title="Oops! Halaman Tidak Ditemukan"
                     description="Halaman yang Anda cari tidak dapat ditemukan. Mungkin alamatnya salah atau sudah dihapus."
+                    image={img400}
                   />
                 }
               />
@@ -42,6 +50,7 @@ function App() {
                     code="401"
                     title="Akses Tidak Sah"
                     description="Maaf, Anda harus masuk atau login terlebih dahulu untuk melihat halaman ini."
+                    image={img401}
                   />
                 }
               />
@@ -52,11 +61,13 @@ function App() {
                     code="403"
                     title="Akses Ditolak"
                     description="Ups! Anda tidak memiliki izin untuk mengakses sumber daya ini."
+                    image={img403}
                   />
                 }
               />
 
-              {/* FINAL: Rute 404 - Halaman Tidak Ditemukan */}
+              {/* Rute 404 (Tanpa Gambar sesuai permintaan) */}
+              {/* UPDATE Rute 404 di sini */}
               <Route
                 path="*"
                 element={
@@ -64,6 +75,7 @@ function App() {
                     code="404"
                     title="Page Not Found"
                     description="Ups! Halaman yang kamu cari tidak ditemukan atau sudah dipindahkan."
+                    image={img404} // Sekarang kirim props image juga
                   />
                 }
               />

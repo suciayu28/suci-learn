@@ -1,14 +1,25 @@
 import PageHeader from "../components/PageHeader"; 
 import { Link } from "react-router-dom";
 
-// Tambahkan destructuring props (code, title, description) di sini
-const NotFound = ({ code, title, description }) => {
+
+const NotFound = ({ code, title, description, image }) => {
   return (
     <div>
       {/* PageHeader menerima title dan breadcrumb agar konsisten */}
       <PageHeader title={`Error ${code || "404"}`} breadcrumb={`Error / ${code || "404"}`} />
 
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        
+        {/* --- TAMBAHKAN BAGIAN GAMBAR DI SINI --- */}
+        {image && (
+          <img 
+            src={image} 
+            alt={`Error ${code}`} 
+            className="w-64 h-auto mb-6 object-contain" 
+          />
+        )}
+        {/* ---------------------------------------- */}
+
         {/* Menggunakan prop code, jika kosong default ke 404 */}
         <h1 className="text-9xl font-bold text-green-500">
           {code || "404"}
