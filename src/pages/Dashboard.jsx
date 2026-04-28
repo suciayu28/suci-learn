@@ -1,5 +1,5 @@
-import Sidebar from "../layouts/Sidebar";
-import Header from "../layouts/Header";
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
 import PageHeader from "../components/PageHeader";
 
 import {

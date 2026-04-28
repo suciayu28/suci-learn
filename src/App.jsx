@@ -1,89 +1,92 @@
-import { useState } from "react";
-import Dashboard from "./pages/Dashboard";
-import "./assets/tailwind.css";
-import Sidebar from "./layouts/Sidebar";
-import Header from "./layouts/Header";
+import React, { Suspense } from "react"; 
 import { Routes, Route } from "react-router-dom";
-import Customers from "./pages/Customers";
-import Orders from "./pages/Orders";
-// Pastikan Anda meng-import ErrorPage yang sudah kita buat sebelumnya
-import ErrorPage from "./pages/NotFound";
+import "./assets/tailwind.css";
+import Loading from "./components/Loading";
+// import MainLayout from "./layouts/MainLayout";
+// import AuthLayout from "./layouts/AuthLayout";
+//  format Lazy
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Customers = React.lazy(() => import("./pages/Customers"));
+const Orders = React.lazy(() => import("./pages/Orders"));
+const Login = React.lazy(() => import("./pages/auth/Login"));
+const Register = React.lazy(() => import("./pages/auth/Register"));
+const Forgot = React.lazy(() => import("./pages/auth/Forgot"));
+const ErrorPage = React.lazy(() => import("./pages/NotFound"));
+const MainLayout = React.lazy(() => import("./layouts/MainLayout"));
+const AuthLayout = React.lazy(() => import("./layouts/AuthLayout"));
 
-// --- IMPORT GAMBAR UNTUK ERROR PAGES ---
+
+
+
+// Import Gambar
 import img400 from "./assets/400.png";
 import img401 from "./assets/401.png";
 import img403 from "./assets/403.png";
 import img404 from "./assets/404.png";
 
-// ----------------------------------------
-
 function App() {
   return (
-    <>
-      <div id="app-container" className="bg-gray-100 min-h-screen flex">
-        <div id="layout-wrapper" className="flex flex-row flex-1">
-          <Sidebar />
-          <div id="main-content" className="flex-1 p-4">
-            <Header />
+    
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/customers" element={<Customers />} />
 
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/customers" element={<Customers />} />
+          <Route
+            path="/400"
+            element={
+              <ErrorPage
+                code="400"
+                title="Oops! Halaman Tidak Ditemukan"
+                description="Halaman yang Anda cari tidak dapat ditemukan."
+                image={img400}
+              />
+            }
+          />
+          <Route
+            path="/401"
+            element={
+              <ErrorPage
+                code="401"
+                title="Akses Tidak Sah"
+                description="Maaf, Anda harus masuk terlebih dahulu."
+                image={img401}
+              />
+            }
+          />
+          <Route
+            path="/403"
+            element={
+              <ErrorPage
+                code="403"
+                title="Akses Ditolak"
+                description="Ups! Anda tidak memiliki izin."
+                image={img403}
+              />
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <ErrorPage
+                code="404"
+                title="Page Not Found"
+                description="Ups! Halaman tidak ditemukan."
+                image={img404}
+              />
+            }
+          />
+        </Route>
 
-              {/* Rute Error dengan Gambar */}
-              <Route
-                path="/400"
-                element={
-                  <ErrorPage
-                    code="400"
-                    title="Oops! Halaman Tidak Ditemukan"
-                    description="Halaman yang Anda cari tidak dapat ditemukan. Mungkin alamatnya salah atau sudah dihapus."
-                    image={img400}
-                  />
-                }
-              />
-              <Route
-                path="/401"
-                element={
-                  <ErrorPage
-                    code="401"
-                    title="Akses Tidak Sah"
-                    description="Maaf, Anda harus masuk atau login terlebih dahulu untuk melihat halaman ini."
-                    image={img401}
-                  />
-                }
-              />
-              <Route
-                path="/403"
-                element={
-                  <ErrorPage
-                    code="403"
-                    title="Akses Ditolak"
-                    description="Ups! Anda tidak memiliki izin untuk mengakses sumber daya ini."
-                    image={img403}
-                  />
-                }
-              />
-
-              {/* Rute 404 (Tanpa Gambar sesuai permintaan) */}
-              {/* UPDATE Rute 404 di sini */}
-              <Route
-                path="*"
-                element={
-                  <ErrorPage
-                    code="404"
-                    title="Page Not Found"
-                    description="Ups! Halaman yang kamu cari tidak ditemukan atau sudah dipindahkan."
-                    image={img404} // Sekarang kirim props image juga
-                  />
-                }
-              />
-            </Routes>
-          </div>
-        </div>
-      </div>
-    </>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot" element={<Forgot />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 
