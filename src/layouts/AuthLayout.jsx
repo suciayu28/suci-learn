@@ -2,32 +2,35 @@ import { Outlet } from "react-router-dom";
 
 export default function AuthLayout() {
     return (
-        /* Mengubah bg-gray-100 menjadi gradasi pink lembut khas produk kecantikan */
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-white to-rose-100">
+        /* Latar belakang menggunakan kombinasi Grey dan Purple lembut */
+        <div className="min-h-screen flex items-center justify-center bg-[#F3F3F3] font-['Poppins']">
             
-            {/* Card utama dengan shadow yang lebih halus (soft shadow) */}
-            <div className="bg-white/90 backdrop-blur-md p-10 rounded-[2rem] shadow-2xl shadow-rose-200/50 w-full max-w-md border border-white">
+            {/* Card utama dengan anatomi organik (sudut bulat 3rem) */}
+            <div className="bg-white p-14 rounded-[3.5rem] shadow-2xl shadow-[#4F5C18]/5 w-full max-w-lg border border-white mx-4 relative overflow-hidden">
                 
-                {/* Bagian Logo: Dari "Sedap" menjadi Nama Toko Make Up kamu */}
-                <div className="flex flex-col items-center justify-center mb-8">
-                    <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-rose-200">
-                        {/* Icon sederhana pengganti logo (bisa diganti icon lipstick/mirror) */}
-                        <span className="text-white text-2xl font-serif">G</span>
+                {/* Dekorasi Organik di pojok (opsional untuk kesan Skinly) */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#F2F7D6] rounded-full blur-3xl opacity-50"></div>
+                
+                {/* Logo & Branding: Primary Olive (#4F5C18) & Playfair */}
+                <div className="flex flex-col items-center justify-center mb-12 relative z-10">
+                    <div className="w-20 h-20 bg-[#4F5C18] rounded-[2rem] flex items-center justify-center mb-6 shadow-lg shadow-[#4F5C18]/20 rotate-3">
+                        <span className="text-white text-3xl font-['Playfair_Display'] italic">-L-</span>
                     </div>
-                    <h1 className="text-3xl font-serif font-bold text-gray-800 tracking-tight">
-                        Glow<span className="text-rose-500">Grace</span>
-                        <span className="text-rose-300">.</span>
+                    <h1 className="text-4xl font-['Playfair_Display'] italic font-medium text-[#262626]">
+                        Lumière<span className="text-[#4F5C18]">Cosmetcs</span>
                     </h1>
-                    <p className="text-xs text-rose-400 uppercase tracking-[0.2em] mt-1">Cosmetic Store</p>
+                    <p className="text-[10px] text-[#4F5C18] uppercase tracking-[0.5em] mt-3 font-black opacity-80">Luxury Makeup Atelier</p>
                 </div>
 
-                {/* Tempat munculnya form Login/Register */}
-                <Outlet/>
+                {/* Form area */}
+                <div className="space-y-4 relative z-10">
+                    <Outlet/>
+                </div>
 
-                {/* Footer Hak Cipta yang disesuaikan */}
-                <p className="text-center text-[10px] text-gray-400 mt-8 leading-relaxed uppercase tracking-widest">
-                    © 2026 GLOW & GRACE BEAUTY SECTOR.<br/>
-                    All beauty rights reserved.
+                {/* Footer Hak Cipta - Tipografi Minimalis */}
+                <p className="text-center text-[9px] text-gray-400 mt-12 leading-relaxed uppercase tracking-[0.3em] font-bold">
+                    © 2026 Lumière Management System.<br/>
+                    All rights reserved.
                 </p>
             </div>
         </div>

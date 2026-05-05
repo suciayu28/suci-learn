@@ -1,114 +1,135 @@
-import { FiArrowUpRight, FiHeart, FiShoppingBag, FiStar, FiZap } from "react-icons/fi";
-import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
+import { FiArrowUpRight, FiHeart, FiShoppingBag, FiStar, FiZap, FiPlus, FiChevronRight } from "react-icons/fi";
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 
 const Dashboard = () => {
-  const chartData = [
-    { n: 'Mon', v: 3100 }, { n: 'Tue', v: 4200 }, { n: 'Wed', v: 3800 }, 
-    { n: 'Thu', v: 5100 }, { n: 'Fri', v: 4800 }, { n: 'Sat', v: 6200 }, { n: 'Sun', v: 5800 }
-  ];
-
-  // PINDAHKAN VARIABEL KE SINI (Di luar return)
-  const products = [
-  { 
-    name: "Creamy Matte Lipstick", 
-    price: "$24.00", 
-    sales: "1.2k sold", 
-    // Kotak warna Rose Pink (FFE4E1) dengan teks produk
-    img: "https://dummyimage.com/200x200/FFE4E1/FF4D94.png&text=Lipstick" 
-  },
-  { 
-    name: "Organic Face Serum", 
-    price: "$48.00", 
-    sales: "840 sold", 
-    img: "https://dummyimage.com/200x200/FFE4E1/FF4D94.png&text=Serum" 
-  },
-  { 
-    name: "Lash Extension Mascara", 
-    price: "$19.00", 
-    sales: "2.1k sold", 
-    // Link Mascara yang tadi error gue ganti pake placeholder pasti
-    img: "https://dummyimage.com/200x200/FFE4E1/FF4D94.png&text=Mascara" 
-  },
-];
+  const chartData = [{ n: 'M', v: 3100 }, { n: 'T', v: 4200 }, { n: 'W', v: 3800 }, { n: 'T', v: 5100 }, { n: 'F', v: 4800 }, { n: 'S', v: 6200 }, { n: 'S', v: 5800 }];
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="max-w-7xl mx-auto p-4 space-y-12 font-['Poppins'] text-[#262626] bg-[#F3F3F3]">
       
-      {/* KATEGORI PENJUALAN */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          { label: "Daily Revenue", val: "$4,250", icon: <FiZap />, color: "bg-amber-50 text-amber-600" },
-          { label: "Beauty Members", val: "2,410", icon: <FiHeart />, color: "bg-rose-50 text-rose-600" },
-          { label: "Orders Shipped", val: "184", icon: <FiShoppingBag />, color: "bg-gray-50 text-black" },
-          { label: "Store Rating", val: "4.9/5", icon: <FiStar />, color: "bg-emerald-50 text-emerald-600" },
-        ].map((item, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col gap-4 hover:shadow-md transition-all group">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg ${item.color}`}>
-              {item.icon}
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">{item.label}</p>
-              <h3 className="text-2xl font-serif italic font-semibold tracking-tight">{item.val}</h3>
-            </div>
+      {/* ============================================================
+          COMPONENT 1: HERO SECTION (EDITORIAL LAYOUT)
+          ============================================================ */}
+      <div className="relative grid grid-cols-12 gap-0 bg-[#F2F7D6] rounded-[4rem] overflow-hidden border border-white/50 shadow-sm">
+        
+        {/* SUB-COMPONENT: Typography & Branding Area */}
+        <div className="col-span-12 lg:col-span-7 p-16 z-10 flex flex-col justify-center">
+          <div className="flex items-center gap-4 mb-8">
+            <span className="w-12 h-[1.5px] bg-[#4F5C18]"></span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-[#4F5C18]">Lumière Cosmetics</p>
           </div>
-        ))}
+          <h1 className="text-8xl font-['Playfair_Display'] italic font-medium leading-[0.95] text-[#262626] -ml-1">
+            Glow <br /> <span className="ml-16">Naturally</span> <br /> Every Day
+          </h1>
+          
+          {/* SUB-COMPONENT: Call to Action (CTA) Pill Buttons */}
+          <div className="mt-10 flex items-center gap-8">
+            <button className="flex items-center gap-4 bg-[#262626] text-white px-10 py-5 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-[#4F5C18] transition-all group">
+              Manage Products <div className="bg-[#4F5C18] p-1 rounded-sm group-hover:rotate-45 transition-transform"><FiArrowUpRight /></div>
+            </button>
+            <div className="text-[11px] font-bold text-[#4F5C18] border-b border-[#4F5C18] cursor-pointer hover:tracking-widest transition-all">EXPLORE TRENDS</div>
+          </div>
+        </div>
+
+        {/* SUB-COMPONENT: Visual Floating Composition */}
+        <div className="hidden lg:flex col-span-5 relative bg-[#D9E67E]/30 items-center justify-center p-12">
+          {/* Decorative Organic Shape */}
+          <div className="absolute w-[80%] h-[120%] bg-[#D9E67E] rounded-full -rotate-12 translate-x-10 translate-y-10 shadow-inner"></div>
+          
+          {/* Main Product Image */}
+          <img 
+            src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600" 
+            alt="Hero Product" 
+            className="relative z-10 w-full h-[550px] object-contain drop-shadow-[0_35px_35px_rgba(0,0,0,0.15)]"
+          />
+
+          {/* SUB-COMPONENT: Floating Badge (Skinly Style) */}
+          <div className="absolute top-24 right-12 bg-[#262626] text-white w-28 h-28 rounded-full flex flex-col items-center justify-center border-8 border-[#F2F7D6] z-20 shadow-xl scale-110">
+            <span className="text-xl font-['Playfair_Display'] italic font-bold">5.5k</span>
+            <span className="text-[8px] uppercase font-black tracking-tighter opacity-70">Sold Out</span>
+          </div>
+        </div>
       </div>
 
-      {/* ANALYTICS & FEATURED */}
+      {/* ============================================================
+          COMPONENT 2: GRID LAYOUT (BENTO BOXES)
+          ============================================================ */}
       <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-8 bg-white p-8 rounded-[2.5rem] border border-gray-50 shadow-sm">
-          <div className="flex justify-between items-center mb-8 px-2">
-            <div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-1">Revenue Stream</h4>
-              <p className="text-xs font-serif italic text-gray-500">Beauty products sales growth</p>
+        
+        {/* COMPONENT 2A: LARGE ANALYTICS CARD (CLEAN WHITE) */}
+        <div className="col-span-12 lg:col-span-8 bg-white rounded-[3.5rem] p-12 border border-white shadow-sm flex flex-col">
+          <div className="flex justify-between items-start mb-16">
+            <div className="space-y-2">
+              <h3 className="text-4xl font-['Playfair_Display'] italic font-medium">Market Analytics</h3>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[#4F5C18] font-black">Sales Performance & Growth</p>
+            </div>
+            
+            {/* SUB-COMPONENT: Secondary Metrics Badge */}
+            <div className="bg-[#F4F3FF] p-6 rounded-[2rem] border border-white text-center min-w-[140px]">
+              <p className="text-[9px] font-bold text-[#4F5C18] uppercase tracking-widest mb-1">Success Rate</p>
+              <span className="text-2xl font-['Playfair_Display'] italic font-bold text-[#262626]">99.8%</span>
             </div>
           </div>
-          <div className="h-[300px] w-full">
+          
+          {/* Chart Area */}
+          <div className="h-[280px] w-full mt-auto">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="makeupGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FB7185" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#FB7185" stopOpacity={0}/>
+                  <linearGradient id="primaryFade" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4F5C18" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#4F5C18" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }} />
-                <Area type="monotone" dataKey="v" stroke="#000" strokeWidth={3} fill="url(#makeupGlow)" />
+                <Area type="monotone" dataKey="v" stroke="#4F5C18" strokeWidth={5} fill="url(#primaryFade)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-4 bg-[#111] rounded-[2.5rem] p-10 text-white relative overflow-hidden group">
+        {/* COMPONENT 2B: DARK FEATURED CARD (HIGH CONTRAST BLACK) */}
+        <div className="col-span-12 lg:col-span-4 bg-[#262626] rounded-[3.5rem] p-12 text-white relative overflow-hidden flex flex-col shadow-2xl">
           <div className="relative z-10 flex flex-col h-full">
-            <span className="text-rose-500 text-[10px] font-black uppercase tracking-[0.5em] mb-6">Seasonal Pick</span>
-            <h2 className="text-4xl font-serif italic font-medium leading-[1.1] mb-6">Silk Finish <br/> Foundation</h2>
-            <button className="mt-auto flex items-center gap-3 text-[10px] font-black uppercase tracking-widest border-b border-white/20 pb-2 hover:text-rose-400 transition-all">
-              Update Inventory <FiArrowUpRight />
-            </button>
+            <FiStar className="text-[#D9E67E] text-5xl mb-8 opacity-80" />
+            <span className="text-[#4F5C18] text-[10px] font-bold uppercase tracking-[0.4em] mb-4">Trending Now</span>
+            <h4 className="text-5xl font-['Playfair_Display'] italic font-medium leading-[1.1] mb-10">Matte Silk <br/> Blush</h4>
+            
+            <div className="mt-auto space-y-6">
+              {/* SUB-COMPONENT: Testimonial/User Badge */}
+              <div className="flex items-center gap-4 border-t border-white/10 pt-6">
+                <div className="w-12 h-12 rounded-full border-2 border-[#D9E67E] p-1 overflow-hidden">
+                  <img src="https://i.pravatar.cc/100?img=32" className="w-full h-full rounded-full object-cover" alt="User"/>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider">Top Reviewer</p>
+                  <p className="text-[9px] opacity-50 font-['Playfair_Display'] italic italic">"Best formula I've ever used"</p>
+                </div>
+              </div>
+              
+              {/* SUB-COMPONENT: Ghost White Pill Button */}
+              <button className="w-full bg-white text-[#262626] py-5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-[#D9E67E] transition-all">
+                RESTOCK ITEM <FiPlus />
+              </button>
+            </div>
           </div>
-          <div className="absolute right-[-15%] bottom-[-5%] w-3/4 h-3/4 bg-[url('https://images.unsplash.com/photo-1596462502278-27bfad450216?w=500')] bg-cover grayscale opacity-40 group-hover:grayscale-0 transition-all duration-1000"></div>
+          {/* Decorative Background Blur */}
+          <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#4F5C18] rounded-full blur-[100px] opacity-30"></div>
         </div>
       </div>
 
-      {/* BEST SELLER INVENTORY */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-50 shadow-sm">
-        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-8">Best Seller Inventory</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {products.map((prod, i) => (
-            <div key={i} className="flex items-center gap-5 group cursor-pointer">
-              <div className="relative">
-                {/* Hapus class grayscale agar placeholder pink-nya terlihat jelas */}
-                <img src={prod.img} alt={prod.name} className="w-20 h-20 rounded-3xl object-cover transition-all duration-500 group-hover:scale-110 shadow-sm" />
-                <div className="absolute -top-2 -right-2 bg-black text-white text-[8px] font-black px-2 py-1 rounded-full">{i + 1}</div>
-              </div>
-              <div>
-                <h5 className="text-[11px] font-black uppercase tracking-tight text-gray-800 mb-1">{prod.name}</h5>
-                <div className="flex gap-4 items-center">
-                  <span className="text-xs font-serif italic text-rose-500">{prod.price}</span>
-                  <span className="text-[9px] font-bold text-gray-300 uppercase tracking-tighter">{prod.sales}</span>
-                </div>
-              </div>
+      {/* ============================================================
+          COMPONENT 3: MARQUEE SLIDER (DYNAMIC ACCENT)
+          ============================================================ */}
+      <div className="bg-[#4F5C18] py-8 rounded-full overflow-hidden flex whitespace-nowrap border-[6px] border-white shadow-2xl scale-[1.02]">
+        <div className="flex gap-24 animate-marquee items-center">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-12 text-white font-['Playfair_Display'] italic text-2xl tracking-tight">
+              <span>99% Natural Ingredients</span>
+              <div className="w-3 h-3 bg-[#D9E67E] rotate-45"></div>
+              <span>Transform Your Routine Today</span>
+              <div className="w-3 h-3 bg-[#D9E67E] rotate-45"></div>
+              <span>Beauty Glow Luxury Atelier</span>
+              <div className="w-3 h-3 bg-[#D9E67E] rotate-45"></div>
             </div>
           ))}
         </div>
