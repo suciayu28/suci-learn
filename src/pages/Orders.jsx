@@ -1,78 +1,100 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
-import { FaBoxOpen, FaShoppingBag, FaHistory, FaTimesCircle, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaShoppingBag, FaSearch, FaChevronLeft, FaChevronRight, FaEye, FaFilter } from "react-icons/fa";
 
 const Orders = () => {
-  const [showForm, setShowForm] = useState(false);
-  
-  // 1. LOGIKA PAGINATION
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; 
+  const itemsPerPage = 8;
 
-  const orderData = Array.from({ length: 30 }, (_, i) => ({
-    orderId: `ORD-${(i + 1).toString().padStart(3, '0')}`,
-    customerName: ["Joko Anwar", "Indra Bruggman", "Gilang Dirga", "Hana Pertiwi"][i % 4],
-    status: ["Pending", "Completed", "Cancelled"][i % 3],
-    totalPrice: Math.floor(Math.random() * 500000) + 50000,
-    date: `2026-04-${(i % 28) + 1}`
-  }));
+  // Data Simulasi Spesifik Makeup Store
+  const orderData = Array.from({ length: 30 }, (_, i) => {
+    const makeupPrices = [350000, 1250000, 89000, 540000, 215000, 750000];
+    const itemCounts = [1, 4, 1, 3, 2, 5];
+    return {
+      id: `ORD-${(i + 1).toString().padStart(3, '0')}`,
+      customerName: ["Joko Anwar", "Indra Bruggman", "Gilang Dirga", "Hana Pertiwi", "Siti Aminah", "Budi Santoso"][i % 6],
+      status: ["Pending", "Completed", "Cancelled"][i % 3],
+      totalPrice: makeupPrices[i % 6],
+      itemsCount: itemCounts[i % 6],
+      date: `2026-05-${((i % 28) + 1).toString().padStart(2, '0')}`,
+    };
+  });
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentOrders = orderData.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(orderData.length / itemsPerPage);
+  const currentOrders = orderData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="animate-fadeIn pb-10 px-4">
-      {/* HEADER SECTION */}
-      <div className="flex items-center justify-between gap-4 mb-8">
-        <div className="transform scale-90 origin-left">
-          <PageHeader title="Product Sales" breadcrumb="Management / Orders" />
+    <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins">
+      <PageHeader title="Sales Transactions" breadcrumb={["Management", "Orders"]}>
+        <button className="bg-[#4F5C18] text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:opacity-90 shadow-lg shadow-[#4F5C18]/20 transition-all flex items-center gap-2">
+          <FaShoppingBag size={14} /> New Transaction
+        </button>
+      </PageHeader>
+
+      {/* Search & Filter */}
+      <div className="mb-6 flex gap-3">
+        <div className="relative flex-1 group">
+          <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-[#4F5C18]/40" />
+          <input 
+            type="text" 
+            placeholder="Search by Order ID or Customer..." 
+            className="w-full pl-12 pr-6 py-4 bg-[#F3F3F3] border-none rounded-2xl outline-none focus:ring-2 focus:ring-[#4F5C18]/20 text-sm font-medium transition-all"
+          />
         </div>
-        {/* Tombol ditaruh di sini agar tidak tertutup modal */}
-        <button 
-          type="button"
-          className="relative z-10 whitespace-nowrap bg-rose-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-600 shadow-xl shadow-rose-200 transition-all transform active:scale-95 flex items-center gap-2"
-          onClick={() => setShowForm(true)}
-        >
-          <FaShoppingBag size={14} /> Create Order
+        <button className="p-4 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl hover:bg-[#F3F3F3] transition-all">
+          <FaFilter size={16} />
         </button>
       </div>
 
-      {/* SEARCH BAR */}
-      <div className="mb-6 relative group">
-        <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-rose-300 group-focus-within:text-rose-500 transition-colors" />
-        <input 
-          type="text" 
-          placeholder="Search by Order ID..." 
-          className="w-full pl-12 pr-6 py-4 bg-white border border-pink-50 rounded-2xl shadow-sm outline-none focus:ring-4 focus:ring-rose-50 transition-all text-sm font-medium"
-        />
-      </div>
-
-      {/* TABLE SECTION */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden mb-4">
+      {/* Table Section */}
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-[#F3F3F3] overflow-hidden mb-4">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-rose-50/30">
-                <th className="p-5 font-black text-[10px] uppercase tracking-widest text-rose-400">Ref. ID</th>
-                <th className="p-5 font-black text-[10px] uppercase tracking-widest text-rose-400">Customer</th>
-                <th className="p-5 font-black text-[10px] uppercase tracking-widest text-rose-400 text-center">Status</th>
-                <th className="p-5 font-black text-[10px] uppercase tracking-widest text-rose-400 text-right">Total</th>
+              <tr className="bg-[#F3F3F3]/50 border-b border-[#F3F3F3]">
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Ref. ID</th>
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Customer & Date</th>
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Qty</th>
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Status</th>
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-right">Total</th>
+                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-pink-50/50">
+            <tbody className="divide-y divide-[#F3F3F3]">
               {currentOrders.map((order) => (
-                <tr key={order.orderId} className="hover:bg-rose-50/10 transition-all group">
-                  <td className="p-5 text-[10px] font-mono font-bold text-rose-400">{order.orderId}</td>
-                  <td className="p-5 text-sm font-serif font-black text-gray-800">{order.customerName}</td>
-                  <td className="p-5 text-center">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">
-                       {order.status}
+                <tr key={order.id} className="hover:bg-[#F3F3F3]/30 transition-all group">
+                  <td className="p-6">
+                    <span className="text-[11px] font-mono font-bold text-[#4F5C18] bg-[#4F5C18]/5 px-3 py-1 rounded-lg border border-[#4F5C18]/10">
+                      {order.id}
                     </span>
                   </td>
-                  <td className="p-5 text-right font-black text-gray-700 text-sm">
-                    Rp{order.totalPrice.toLocaleString('id-ID')}
+                  <td className="p-6">
+                    <p className="text-sm font-bold text-[#262626] font-playfair">{order.customerName}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{order.date} May</p>
+                  </td>
+                  <td className="p-6 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                    {order.itemsCount} Items
+                  </td>
+                  <td className="p-6 text-center">
+                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      order.status === "Completed" ? "bg-[#4F5C18]/10 text-[#4F5C18]" :
+                      order.status === "Pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-500"
+                    }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className="p-6 text-right font-bold text-[#262626] text-sm font-poppins">
+                    Rp {order.totalPrice.toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-6 text-center">
+                    <button 
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                      className="p-3 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-xl hover:bg-[#4F5C18] hover:text-white hover:border-[#4F5C18] transition-all shadow-sm"
+                    >
+                      <FaEye size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -80,49 +102,29 @@ const Orders = () => {
           </table>
         </div>
 
-        {/* PAGINATION NAVIGATION */}
-        <div className="p-4 border-t border-rose-50 flex items-center justify-between bg-rose-50/5">
-          <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+        {/* Pagination Footer */}
+        <div className="p-6 border-t border-[#F3F3F3] flex items-center justify-between bg-[#F3F3F3]/10">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
             Page {currentPage} of {totalPages}
-          </span>
+          </p>
           <div className="flex gap-2">
             <button 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => p - 1)}
-              className="p-2.5 rounded-xl border border-rose-100 bg-white text-rose-400 disabled:opacity-30 hover:bg-rose-50"
+              disabled={currentPage === 1} 
+              onClick={() => setCurrentPage(p => p - 1)} 
+              className="p-3 rounded-xl border border-[#F3F3F3] bg-white text-[#4F5C18] disabled:opacity-30 hover:bg-[#F3F3F3] transition-all"
             >
-              <FaChevronLeft size={10} />
+              <FaChevronLeft size={12} />
             </button>
             <button 
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => p + 1)}
-              className="p-2.5 rounded-xl border border-rose-100 bg-white text-rose-400 disabled:opacity-30 hover:bg-rose-50"
+              disabled={currentPage === totalPages} 
+              onClick={() => setCurrentPage(p => p + 1)} 
+              className="p-3 rounded-xl border border-[#F3F3F3] bg-white text-[#4F5C18] disabled:opacity-30 hover:bg-[#F3F3F3] transition-all"
             >
-              <FaChevronRight size={10} />
+              <FaChevronRight size={12} />
             </button>
           </div>
         </div>
       </div>
-
-      {/* MODAL - FIXED DI TENGAH */}
-      {showForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-rose-900/20 backdrop-blur-md" 
-            onClick={() => setShowForm(false)}
-          ></div>
-          <div className="relative bg-white p-8 rounded-[3rem] w-full max-w-md shadow-2xl animate-slideUp border border-white">
-            <h2 className="text-2xl font-serif font-black text-gray-800 text-center mb-6">New Order</h2>
-            <form className="space-y-4">
-               <input type="text" className="w-full p-4 border border-pink-50 rounded-2xl bg-gray-50 text-sm" placeholder="Customer Name" />
-               <div className="grid grid-cols-2 gap-3 mt-8">
-                  <button type="button" onClick={() => setShowForm(false)} className="py-4 text-gray-400 font-black text-[10px] uppercase">Cancel</button>
-                  <button type="button" className="py-4 bg-rose-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-rose-200">Save Order</button>
-               </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
