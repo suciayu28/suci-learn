@@ -1,11 +1,10 @@
 import React from "react";
-import { FiArrowUpRight, FiShoppingBag, FiZap, FiMail, FiInstagram, FiTwitter } from "react-icons/fi";
+import { FiArrowUpRight, FiInstagram, FiTwitter } from "react-icons/fi";
 
-// --- IMPORT KOMPONEN SHADCN UI ---
+// --- IMPORT KOMPONEN SHADCN UI (Hanya yang diperbolehkan) ---
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const featuredProducts = [
@@ -39,12 +38,13 @@ const Dashboard = () => {
           </h1>
           
           <div className="mt-12 flex items-center gap-10">
-            <Button className="group h-auto flex items-center gap-4 bg-[#262626] text-white px-12 py-6 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#4F5C18] transition-all duration-500 shadow-2xl border-none">
+            {/* Perbaikan: Menggunakan tag button biasa agar tidak error */}
+            <button className="group h-auto flex items-center gap-4 bg-[#262626] text-white px-12 py-6 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#4F5C18] transition-all duration-500 shadow-2xl border-none">
               Lihat Koleksi 
               <div className="bg-[#4F5C18] text-white p-1.5 rounded-full group-hover:rotate-45 transition-transform duration-500">
                 <FiArrowUpRight size={16}/>
               </div>
-            </Button>
+            </button>
             <span className="text-[11px] font-bold text-[#4F5C18] border-b-2 border-[#4F5C18] pb-1 cursor-pointer hover:tracking-[0.2em] transition-all">
               CERITA KAMI
             </span>
@@ -61,7 +61,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 2. NEWSLETTER - Implementasi INPUT Shadcn */}
+      {/* 2. PRODUCTS & NEWSLETTER */}
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-8 bg-white rounded-[3.5rem] p-12 border border-gray-100 shadow-sm">
            <h3 className="text-4xl font-['Playfair_Display'] italic font-medium mb-12">Esensi Mingguan</h3>
@@ -84,29 +84,30 @@ const Dashboard = () => {
               Gabung di <br/> <span className="text-[#4F5C18]">Atelier</span>
             </h4>
             
-            <form className="space-y-4">
-              {/* KOMPONEN 1: INPUT SHADCN */}
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              {/* KOMPONEN 1: INPUT SHADCN (DIPERBOLEHKAN) */}
               <Input 
                 type="email" 
                 placeholder="Alamat email Anda" 
                 className="w-full bg-white/5 border-white/10 rounded-2xl px-6 py-7 focus-visible:ring-[#4F5C18] text-sm text-white"
               />
-              <Button className="w-full h-auto bg-[#4F5C18] text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#262626] transition-all duration-300">
+              {/* Perbaikan: Menggunakan tag button biasa */}
+              <button className="w-full h-auto bg-[#4F5C18] text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#262626] transition-all duration-300">
                 BERLANGGANAN
-              </Button>
+              </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* 3. FOOTER - Implementasi SEPARATOR & AVATAR Shadcn */}
+      {/* 3. FOOTER */}
       <div className="space-y-10">
-        {/* KOMPONEN 2: SEPARATOR SHADCN */}
+        {/* KOMPONEN 2: SEPARATOR SHADCN (DIPERBOLEHKAN) */}
         <Separator className="bg-gray-200" />
         
         <footer className="flex flex-col md:flex-row justify-between items-center gap-10 pb-10">
           <div className="flex items-center gap-6">
-            {/* KOMPONEN 3: AVATAR SHADCN */}
+            {/* KOMPONEN 3: AVATAR SHADCN (DIPERBOLEHKAN) */}
             <Avatar className="h-14 w-14 border-2 border-[#4F5C18]/20">
               <AvatarImage src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" />
               <AvatarFallback>LM</AvatarFallback>

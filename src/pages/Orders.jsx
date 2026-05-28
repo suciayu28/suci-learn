@@ -3,12 +3,21 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { FaShoppingBag, FaSearch, FaChevronLeft, FaChevronRight, FaEye, FaFilter } from "react-icons/fa";
 
+// --- IMPORT KOMPONEN SHADCN UI ---
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 const Orders = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Data Simulasi Spesifik Makeup Store
   const orderData = Array.from({ length: 30 }, (_, i) => {
     const makeupPrices = [350000, 1250000, 89000, 540000, 215000, 750000];
     const itemCounts = [1, 4, 1, 3, 2, 5];
@@ -48,59 +57,57 @@ const Orders = () => {
         </button>
       </div>
 
-      {/* Table Section */}
+      {/* --- IMPLEMENTASI TABLE SHADCN UI --- */}
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-[#F3F3F3] overflow-hidden mb-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F3F3F3]/50 border-b border-[#F3F3F3]">
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Ref. ID</th>
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Customer & Date</th>
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Qty</th>
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Status</th>
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-right">Total</th>
-                <th className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F3F3F3]">
-              {currentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-[#F3F3F3]/30 transition-all group">
-                  <td className="p-6">
-                    <span className="text-[11px] font-mono font-bold text-[#4F5C18] bg-[#4F5C18]/5 px-3 py-1 rounded-lg border border-[#4F5C18]/10">
-                      {order.id}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <p className="text-sm font-bold text-[#262626] font-playfair">{order.customerName}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{order.date} May</p>
-                  </td>
-                  <td className="p-6 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                    {order.itemsCount} Items
-                  </td>
-                  <td className="p-6 text-center">
-                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                      order.status === "Completed" ? "bg-[#4F5C18]/10 text-[#4F5C18]" :
-                      order.status === "Pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-500"
-                    }`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="p-6 text-right font-bold text-[#262626] text-sm font-poppins">
-                    Rp {order.totalPrice.toLocaleString('id-ID')}
-                  </td>
-                  <td className="p-6 text-center">
-                    <button 
-                      onClick={() => navigate(`/orders/${order.id}`)}
-                      className="p-3 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-xl hover:bg-[#4F5C18] hover:text-white hover:border-[#4F5C18] transition-all shadow-sm"
-                    >
-                      <FaEye size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader className="bg-[#F3F3F3]/50">
+            <TableRow className="border-b border-[#F3F3F3]">
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Ref. ID</TableHead>
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18]">Customer & Date</TableHead>
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Qty</TableHead>
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Status</TableHead>
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-right">Total</TableHead>
+              <TableHead className="p-6 font-bold text-[10px] uppercase tracking-[0.15em] text-[#4F5C18] text-center">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentOrders.map((order) => (
+              <TableRow key={order.id} className="hover:bg-[#F3F3F3]/30 transition-all border-[#F3F3F3]">
+                <TableCell className="p-6">
+                  <span className="text-[11px] font-mono font-bold text-[#4F5C18] bg-[#4F5C18]/5 px-3 py-1 rounded-lg border border-[#4F5C18]/10">
+                    {order.id}
+                  </span>
+                </TableCell>
+                <TableCell className="p-6">
+                  <p className="text-sm font-bold text-[#262626] font-playfair">{order.customerName}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{order.date} May</p>
+                </TableCell>
+                <TableCell className="p-6 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  {order.itemsCount} Items
+                </TableCell>
+                <TableCell className="p-6 text-center">
+                  <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    order.status === "Completed" ? "bg-[#4F5C18]/10 text-[#4F5C18]" :
+                    order.status === "Pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-500"
+                  }`}>
+                    {order.status}
+                  </span>
+                </TableCell>
+                <TableCell className="p-6 text-right font-bold text-[#262626] text-sm">
+                  Rp {order.totalPrice.toLocaleString('id-ID')}
+                </TableCell>
+                <TableCell className="p-6 text-center">
+                  <button 
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                    className="p-3 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-xl hover:bg-[#4F5C18] hover:text-white transition-all"
+                  >
+                    <FaEye size={14} />
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
         {/* Pagination Footer */}
         <div className="p-6 border-t border-[#F3F3F3] flex items-center justify-between bg-[#F3F3F3]/10">
