@@ -1,24 +1,25 @@
 import React, { Suspense } from "react"; 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import "./assets/tailwind.css";
 import Loading from "./components/Loading";
 
 // --- LAZY LOADING PAGES ---
 
-// Admin & Core Pages
+// Showcase (Landing Page Utama)
+const LumiereShowcase = React.lazy(() => import("./pages/LumiereShowcase"));
+
+// Admin & Core Pages (Masing-masing panggil file yang benar)
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const Customers = React.lazy(() => import("./pages/Customers"));
 const CustomersDetail = React.lazy(() => import("./pages/CustomersDetail"));
 const Orders = React.lazy(() => import("./pages/Orders"));
 const OrderDetail = React.lazy(() => import("./pages/OrdersDetail"));
+const OrderHistory = React.lazy(() => import("./pages/OrderHistory"));
 
 // Auth Pages
 const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
 const Forgot = React.lazy(() => import("./pages/auth/Forgot"));
-
-// Modul 10: Lumière Showcase (Ganti dari AtelierLaboratory)
-const LumiereShowcase = React.lazy(() => import("./pages/LumiereShowcase"));
 
 // Error & Layouts
 const ErrorPage = React.lazy(() => import("./pages/NotFound"));
@@ -33,15 +34,18 @@ function App() {
     <Suspense fallback={<Loading />}>
       <Routes>
         
-        {/* AREA GUEST: Menggunakan Showcase sebagai halaman utama tamu */}
-        <Route path="/welcome" element={<LumiereShowcase />} />
+        {/* 1. PUBLIC AREA: Halaman Showcase muncul di root "/" tanpa Sidebar Admin */}
+        <Route path="/" element={<LumiereShowcase />} />
+        <Route path="/welcome" element={<Navigate to="/" replace />} />
 
-        {/* AREA ADMIN: Menggunakan MainLayout */}
+        {/* 2. ADMIN & USER HISTORY AREA: Dibungkus MainLayout (Ada Sidebar) */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Dashboard />} />
+          {/* Dashboard dipindah ke path /dashboard agar tidak bentrok dengan Showcase */}
+          <Route path="/dashboard" element={<Dashboard />} />
           
-          {/* IMPLEMENTASI MODUL 10: Sekarang panggil Showcase di sini juga boleh atau hapus saja lab-nya */}
-          <Route path="/atelier-lab" element={<LumiereShowcase />} />
+          {/* Implementasi Modul 10 & History */}
+          <Route path="/order-history" element={<OrderHistory />} />
+          <Route path="/atelier-lab" element={<LumiereShowcase />} /> 
           
           {/* Orders Management */}
           <Route path="/orders" element={<Orders />} />
@@ -51,21 +55,21 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomersDetail />} />
 
-          {/* Fallback 404 Inside MainLayout */}
+          {/* Fallback 404 (Di dalam MainLayout) */}
           <Route
             path="*"
             element={
               <ErrorPage
                 code="404"
                 title="Look Not Found"
-                description="Halaman yang kamu cari sudah 'sold out' atau dipindahkan dari katalog kami."
+                description="Halaman tidak ditemukan di dalam sistem."
                 image={img404}
               />
             }
           />
         </Route>
 
-        {/* AREA AUTH: Menggunakan AuthLayout */}
+        {/* 3. AUTH AREA: Menggunakan AuthLayout */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

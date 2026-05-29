@@ -1,27 +1,43 @@
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
-import { FaChevronLeft, FaPrint, FaDownload, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaBox, FaGem } from "react-icons/fa";
+import { FaChevronLeft, FaPrint, FaDownload, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaBox, FaGem, FaCrown } from "react-icons/fa";
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Logika pengambilan data customer sinkron dengan index ID
+  // 1. Logika Sinkronisasi Data (DISESUAIKAN AGAR HARGA MATCH DENGAN ORDERS.JS)
   const orderIndex = id?.includes('-') ? parseInt(id.split('-')[1]) - 1 : 0;
-  const customers = ["Joko Anwar", "Indra Bruggman", "Gilang Dirga", "Hana Pertiwi", "Siti Aminah", "Budi Santoso"];
-  const currentCustomer = customers[orderIndex % 6] || "Valued Customer";
-  const orderStatus = ["Pending", "Completed", "Cancelled"][orderIndex % 3] || "Completed";
-
-  // Mock Data Produk Makeup (Item List)
-  const purchasedItems = [
-    { id: 1, name: "Silk Satin Foundation", shade: "Warm Ivory (02)", price: 350000, qty: 1, category: "Face" },
-    { id: 2, name: "Velvet Matte Lipstick", shade: "Midnight Rose", price: 185000, qty: 2, category: "Lips" },
-    { id: 3, name: "Glow Radiance Palette", shade: "Celestial Gold", price: 425000, qty: 1, category: "Eyes" }
+  
+  const customerNames = [
+    "Amanda Putri", "Syafira Bella", "Clara Wijaya", "Nadia Safira", 
+    "Rania Azzahra", "Jessica Tan", "Dewi Sartika", "Manda Rose",
+    "Bella Hadid", "Selena Gomez", "Kylie Jenner", "Kimberly"
   ];
+  
+  const cities = ["Jakarta", "Surabaya", "Bandung", "Medan", "Semarang", "Makassar"];
+  const tiers = ["Gold", "Silver", "Bronze"];
 
-  const subtotal = purchasedItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const tax = subtotal * 0.11; // PPN 11%
-  const grandTotal = subtotal + tax;
+  const currentCustomer = customerNames[orderIndex % customerNames.length] || "Valued Customer";
+  const currentCity = cities[orderIndex % cities.length];
+  const currentTier = tiers[orderIndex % 3];
+  const orderStatus = ["Completed", "Pending", "Cancelled"][orderIndex % 3] || "Completed";
+
+  // LOGIKA PERHITUNGAN HARGA AGAR SINKRON DENGAN TABEL ORDERS
+  // Replikasi logika: totalPrice = tier === "Gold" ? (120 + (i % 150)) * 50000 : ...
+  const i = orderIndex;
+  const calculatedGrandTotal = currentTier === "Gold" ? (120 + (i % 150)) * 50000 : 
+                               currentTier === "Silver" ? (50 + (i % 50)) * 50000 : (5 + (i % 25)) * 50000;
+
+  // 2. Mock Data Produk (Disesuaikan agar totalnya masuk akal dengan calculatedGrandTotal)
+  const taxRate = 0.11;
+  const subtotalBeforeTax = calculatedGrandTotal / (1 + taxRate);
+  const taxAmount = calculatedGrandTotal - subtotalBeforeTax;
+
+  const purchasedItems = [
+    { id: 1, name: "Silk Satin Foundation", shade: "Warm Ivory (02)", price: subtotalBeforeTax * 0.6, qty: 1, category: "Face" },
+    { id: 2, name: "Lipstik Velvet Matte", shade: "Midnight Rose", price: subtotalBeforeTax * 0.2, qty: 2, category: "Lips" },
+  ];
 
   return (
     <div className="animate-in slide-in-from-bottom-4 duration-700 pb-10 px-4 font-poppins text-[#262626]">
@@ -29,15 +45,21 @@ const OrderDetail = () => {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-[#4F5C18] font-black text-[10px] uppercase tracking-widest mb-6 hover:opacity-70 transition-all"
       >
-        <FaChevronLeft size={10} /> Back to Sales Overview
+        <FaChevronLeft size={10} /> Back to Customer List
       </button>
 
-      <PageHeader title={`Invoice #${id}`} breadcrumb={["Orders", "Details"]}>
+      <PageHeader title={`Invoice #${id}`} breadcrumb={["Management", "Invoice Details"]}>
         <div className="flex gap-2">
-          <button className="p-3 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-xl hover:bg-[#F3F3F3] transition-all">
+          <button 
+            onClick={() => window.print()}
+            className="p-3 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-xl hover:bg-[#F3F3F3] transition-all"
+          >
             <FaPrint size={14} />
           </button>
-          <button className="bg-[#4F5C18] text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-[#4F5C18]/20 transition-all hover:opacity-90">
+          <button 
+            onClick={() => alert("Downloading PDF Invoice...")}
+            className="bg-[#4F5C18] text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-[#4F5C18]/20 transition-all hover:opacity-90"
+          >
             <FaDownload size={14} /> PDF Invoice
           </button>
         </div>
@@ -75,19 +97,19 @@ const OrderDetail = () => {
               ))}
             </div>
 
-            {/* Total Calculations */}
+            {/* Total Calculations - SEKARANG DINAMIS SESUAI TABEL ORDERS */}
             <div className="mt-10 pt-6 border-t-2 border-dashed border-[#F3F3F3] space-y-3 text-right">
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                <span>Subtotal</span>
-                <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                <span>Subtotal (Excl. Tax)</span>
+                <span>Rp {Math.round(subtotalBeforeTax).toLocaleString('id-ID')}</span>
               </div>
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 <span>PPN (11%)</span>
-                <span>Rp {tax.toLocaleString('id-ID')}</span>
+                <span>Rp {Math.round(taxAmount).toLocaleString('id-ID')}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-[#F3F3F3]">
                 <span className="font-playfair font-bold text-[#262626] text-2xl">Grand Total</span>
-                <span className="font-poppins font-black text-[#4F5C18] text-3xl">Rp {grandTotal.toLocaleString('id-ID')}</span>
+                <span className="font-poppins font-black text-[#4F5C18] text-3xl">Rp {calculatedGrandTotal.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
@@ -95,22 +117,29 @@ const OrderDetail = () => {
 
         {/* RIGHT: Status & Customer Info */}
         <div className="space-y-6">
-          {/* Status Card */}
           <div className="bg-[#4F5C18] rounded-[2.5rem] p-8 text-white shadow-xl shadow-[#4F5C18]/20 relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Status</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Status Transaksi</p>
               <h4 className="text-2xl font-playfair font-bold mb-6">{orderStatus}</h4>
               <div className="flex items-center gap-3 text-xs font-medium bg-white/10 p-3 rounded-xl backdrop-blur-sm">
                 <FaCalendarAlt className="opacity-60" />
-                <span>12 May 2026 - 10:30 AM</span>
+                <span>12 Mei 2026 - 10:30 WIB</span>
               </div>
             </div>
             <FaGem className="absolute -right-4 -bottom-4 text-white opacity-10 text-9xl rotate-12" />
           </div>
 
-          {/* Customer Card */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
-            <h3 className="font-playfair font-bold text-[#262626] text-lg mb-6">Client Information</h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-playfair font-bold text-[#262626] text-lg">Client Information</h3>
+              <span className={`flex items-center gap-1 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-tighter ${
+                currentTier === 'Gold' ? 'bg-amber-100 text-amber-600' : 
+                currentTier === 'Silver' ? 'bg-slate-100 text-slate-500' : 'bg-orange-50 text-orange-600'
+              }`}>
+                {currentTier === 'Gold' && <FaCrown size={8}/>} {currentTier}
+              </span>
+            </div>
+            
             <div className="space-y-5">
               <div className="flex items-start gap-4">
                 <div className="p-4 bg-[#F3F3F3] rounded-2xl text-[#4F5C18]"><FaUser size={16} /></div>
@@ -124,7 +153,7 @@ const OrderDetail = () => {
                 <div>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Shipping Address</p>
                   <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                    Jl. Senopati Raya No. 45, Kebayoran Baru, Jakarta Selatan, 12190
+                    Jl. Mawar Indah No. {orderIndex + 1}, {currentCity}, Indonesia
                   </p>
                 </div>
               </div>
