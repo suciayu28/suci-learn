@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react"; // Menambahkan useMemo dan useEffect ke dalam import React
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { FaShoppingBag, FaSearch, FaChevronLeft, FaChevronRight, FaEye, FaFilter, FaCrown, FaTimes } from "react-icons/fa";
@@ -18,42 +18,53 @@ const Orders = () => {
   const [filterTier, setFilterTier] = useState("All"); // State untuk Filter
   const itemsPerPage = 8;
 
-  // 1. Data Pelanggan Make Up Store (800 Baris)
-  const orderData = Array.from({ length: 800 }, (_, i) => {
-    const tiers = ["Gold", "Silver", "Bronze"];
-    const tier = tiers[i % 3];
-    const customerNames = [
-      "Amanda Putri", "Syafira Bella", "Clara Wijaya", "Nadia Safira", 
-      "Rania Azzahra", "Jessica Tan", "Dewi Sartika", "Manda Rose",
-      "Bella Hadid", "Selena Gomez", "Kylie Jenner", "Kimberly"
-    ];
-    
-    const totalPrice = tier === "Gold" ? (120 + (i % 150)) * 50000 : 
-                      tier === "Silver" ? (50 + (i % 50)) * 50000 : (5 + (i % 25)) * 50000;
+  // 1. Data Pelanggan Make Up Store (800 Baris) dikemas menggunakan useMemo agar tidak di-generate ulang pada setiap render
+  const orderData = useMemo(() => {
+    return Array.from({ length: 800 }, (_, i) => {
+      const tiers = ["Gold", "Silver", "Bronze"];
+      const tier = tiers[i % 3];
+      const customerNames = [
+        "Amanda Putri", "Syafira Bella", "Clara Wijaya", "Nadia Safira", 
+        "Rania Azzahra", "Jessica Tan", "Dewi Sartika", "Manda Rose",
+        "Bella Hadid", "Selena Gomez", "Kylie Jenner", "Kimberly"
+      ];
+      
+      const totalPrice = tier === "Gold" ? (120 + (i % 150)) * 50000 : 
+                        tier === "Silver" ? (50 + (i % 50)) * 50000 : (5 + (i % 25)) * 50000;
 
-    return {
-      id: `CUST-${(i + 1).toString().padStart(3, '0')}`,
-      customerName: customerNames[i % customerNames.length],
-      tier: tier,
-      totalPrice: totalPrice,
-      itemsCount: (i % 8) + 1,
-      date: `${((i % 28) + 1).toString().padStart(2, '0')}/05/2026`,
-    };
-  });
+      return {
+        id: `CUST-${(i + 1).toString().padStart(3, '0')}`,
+        customerName: customerNames[i % customerNames.length],
+        tier: tier,
+        totalPrice: totalPrice,
+        itemsCount: (i % 8) + 1,
+        date: `${((i % 28) + 1).toString().padStart(2, '0')}/05/2026`,
+      };
+    });
+  }, []); // Array dependensi kosong karena data bersifat statis/dummy awal
 
-  // 2. Logika Gabungan: Filter Membership + Search
-  const filteredOrders = orderData.filter(order => {
-    const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTier = filterTier === "All" || order.tier === filterTier;
-    
-    return matchesSearch && matchesTier;
-  });
+  // 2. Logika Gabungan: Filter Membership + Search dioptimalkan dengan useMemo
+  // Menghindari kalkulasi ulang komputasi filter 800 data baris jika nilai kriteria pencarian tidak berubah
+  const filteredOrders = useMemo(() => {
+    return orderData.filter(order => {
+      const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            order.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTier = filterTier === "All" || order.tier === filterTier;
+      
+      return matchesSearch && matchesTier;
+    });
+  }, [orderData, searchQuery, filterTier]); // Berjalan ulang hanya jika data mentah, query pencarian, atau filter tier berubah
+
+  // 3. Efek Samping (useEffect) untuk mengembalikan posisi halaman aktif ke halaman pertama
+  // ketika pengguna mengetik kata kunci baru atau memindahkan opsi filter keanggotaan
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterTier]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const currentOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // 3. Fungsi Download List
+  // 4. Fungsi Download List
   const handleDownload = () => {
     alert(`Mengekspor ${filteredOrders.length} data pelanggan (${filterTier}) ke file Excel...`);
   };
@@ -77,7 +88,7 @@ const Orders = () => {
             type="text" 
             placeholder="Search customer name or ID..." 
             value={searchQuery}
-            onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}}
+            onChange={(e) => setSearchQuery(e.target.value)} // Penghapusan setCurrentPage(1) manual karena sudah di-handle otomatis oleh useEffect di atas
             className="w-full pl-12 pr-6 py-4 bg-[#F3F3F3] border-none rounded-2xl outline-none focus:ring-2 focus:ring-[#4F5C18]/20 text-sm font-medium transition-all"
           />
         </div>
@@ -87,7 +98,7 @@ const Orders = () => {
           <div className="relative">
             <select 
               value={filterTier}
-              onChange={(e) => {setFilterTier(e.target.value); setCurrentPage(1);}}
+              onChange={(e) => setFilterTier(e.target.value)} // Penghapusan setCurrentPage(1) manual karena sudah di-handle otomatis oleh useEffect di atas
               className="appearance-none pl-12 pr-10 py-4 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#4F5C18]/20 cursor-pointer transition-all"
             >
               <option value="All">All Membership</option>

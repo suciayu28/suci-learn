@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react"; // 1. Ditambahkan useEffect dan useRef di sini
 import { useNavigate } from "react-router-dom"; // Import navigasi
 import {
   FiStar, FiPercent, FiBox, FiArrowRight,
@@ -27,6 +27,17 @@ const LumiereShowcase = () => {
   const [cartItems, setCartItems] = useState([]);
   const [alertMsg, setAlertMsg] = useState("");
   const [isBagOpen, setIsBagOpen] = useState(false);
+
+  // 2. Inisialisasi useRef untuk menangkap elemen DOM input email newsletter
+  const emailInputRef = useRef(null);
+
+  // 3. Implementasi useEffect untuk merespon interaksi setelah user klik subscribe
+  useEffect(() => {
+    if (subscribed && emailInputRef.current) {
+      emailInputRef.current.blur(); // Melepas fokus kursor dari input setelah berhasil submit
+      setEmail(""); // Mengosongkan form input email
+    }
+  }, [subscribed]); // Berjalan setiap kali nilai state 'subscribed' berubah
 
   // --- DATA PRODUK ---
   const categories = ["Semua", "Perawatan Kulit", "Tata Rias", "Parfum", "Alat Kecantikan"];
@@ -202,7 +213,15 @@ const LumiereShowcase = () => {
           <div className="lg:col-span-3 bg-white p-16 rounded-[4rem] border border-gray-100 shadow-sm flex flex-col justify-center">
             <h3 className="text-4xl font-playfair italic mb-8">Gabung di Atelier</h3>
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4">
-              <LumiereInput type="email" placeholder="Alamat Email Anda" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-grow bg-[#F3F3F3] h-16 rounded-2xl px-8 border-none" />
+              {/* 4. Ditambahkan properti ref={emailInputRef} pada komponen LumiereInput di bawah ini */}
+              <LumiereInput 
+                ref={emailInputRef}
+                type="email" 
+                placeholder="Alamat Email Anda" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                className="flex-grow bg-[#F3F3F3] h-16 rounded-2xl px-8 border-none" 
+              />
               <LumiereButton type="submit" className="h-16 px-12 bg-[#262626] text-white rounded-2xl">
                 {subscribed ? "Terdaftar" : "Join Now"}
               </LumiereButton>

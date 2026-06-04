@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Menambahkan useEffect ke dalam import
+import { useNavigate } from "react-router-dom"; // Mengimport useNavigate untuk fungsi navigasi balik
 import { FiPackage, FiChevronRight, FiClock, FiCheckCircle, FiArrowLeft } from "react-icons/fi";
 import LumiereBadge from "../components/basic/LumiereBadge";
 
 const OrderHistory = () => {
+  const navigate = useNavigate(); // Inisialisasi hook navigasi
+
   // --- DATA DUMMY (Sesuai struktur tabel kamu) ---
   const [orders] = useState([
     {
@@ -28,6 +31,14 @@ const OrderHistory = () => {
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  // --- USE EFFECT ---
+  // Secara otomatis memilih pesanan paling pertama saat halaman riwayat dimuat (UX enhancement)
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      setSelectedOrder(orders[0]);
+    }
+  }, [orders]); // Dependensi dipasang ke array data orders
+
   return (
     <div className="bg-[#F3F3F3] min-h-screen font-poppins text-[#262626] pb-20">
       {/* Header Eksklusif */}
@@ -39,7 +50,11 @@ const OrderHistory = () => {
             </span>
             <h1 className="text-4xl font-playfair italic">Riwayat Pesanan</h1>
           </div>
-          <button className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#4F5C18] transition-colors">
+          {/* Menambahkan event handler onClick untuk mengaktifkan fungsi tombol kembali ke halaman root */}
+          <button 
+            onClick={() => navigate("/")} 
+            className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#4F5C18] transition-colors"
+          >
             <FiArrowLeft /> Kembali ke Store
           </button>
         </div>

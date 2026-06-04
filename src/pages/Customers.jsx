@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react"; // 1. Ditambahkan useEffect dan useRef di sini
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { FaUserPlus, FaGem, FaMedal, FaAward, FaSearch, FaFilter, FaChevronLeft, FaChevronRight, FaEye, FaTimes, FaSave } from "react-icons/fa";
@@ -23,6 +23,16 @@ const Customers = () => {
   // State Baru untuk Modal Add Member
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newMember, setNewMember] = useState({ name: "", email: "", loyalty: "Bronze" });
+
+  // 2. Inisialisasi useRef untuk elemen input pencarian
+  const searchInputRef = useRef(null);
+
+  // 3. Implementasi useEffect untuk auto-focus saat halaman diakses
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []); // Dependency array kosong agar hanya berjalan 1 kali saat mount
 
   const itemsPerPage = 8;
 
@@ -53,7 +63,7 @@ const Customers = () => {
     e.preventDefault();
     alert(`Success! Member ${newMember.name} has been registered.`);
     setIsModalOpen(false);
-    setNewMember({ name: "", email: "", loyalty: "Bronze" });
+    NewMember({ name: "", email: "", loyalty: "Bronze" });
   };
 
   return (
@@ -124,7 +134,9 @@ const Customers = () => {
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative group">
           <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-[#4F5C18]/40 z-10" />
+          {/* 4. Ditambahkan properti ref={searchInputRef} pada komponen Input di bawah ini */}
           <Input 
+            ref={searchInputRef}
             type="text" 
             placeholder="Search member name or ID..." 
             value={searchQuery}
