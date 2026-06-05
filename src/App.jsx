@@ -34,14 +34,16 @@ function App() {
     <Suspense fallback={<Loading />}>
       <Routes>
         
-        {/* 1. PUBLIC AREA: Halaman Showcase muncul di root "/" tanpa Sidebar Admin */}
-        <Route path="/" element={<LumiereShowcase />} />
-        <Route path="/welcome" element={<Navigate to="/" replace />} />
+        {/* 1. PUBLIC AREA: Halaman Showcase dipindah ke "/welcome" agar root "/" bisa dipakai Dashboard */}
+        <Route path="/welcome" element={<LumiereShowcase />} />
 
         {/* 2. ADMIN & USER HISTORY AREA: Dibungkus MainLayout (Ada Sidebar) */}
         <Route element={<MainLayout />}>
-          {/* Dashboard dipindah ke path /dashboard agar tidak bentrok dengan Showcase */}
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* PERBAIKAN: Mengubah path dari "/dashboard" menjadi "/" agar langsung terbuka saat aplikasi dijalankan */}
+          <Route path="/" element={<Dashboard />} />
+          
+          {/* Mengarahkan sisa traffic lama /dashboard ke root "/" agar tidak patah/error */}
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           
           {/* Implementasi Modul 10 & History */}
           <Route path="/order-history" element={<OrderHistory />} />
