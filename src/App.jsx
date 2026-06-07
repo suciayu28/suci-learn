@@ -16,6 +16,12 @@ const Orders = React.lazy(() => import("./pages/Orders"));
 const OrderDetail = React.lazy(() => import("./pages/OrdersDetail"));
 const OrderHistory = React.lazy(() => import("./pages/OrderHistory"));
 
+// New CRM Pages
+const Membership = React.lazy(() => import("./pages/Membership"));
+const Feedback = React.lazy(() => import("./pages/Feedback"));
+const Marketing = React.lazy(() => import("./pages/Marketing"));
+const AdminCatalog = React.lazy(() => import("./pages/AdminCatalog"));
+
 // Auth Pages
 const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
@@ -34,28 +40,38 @@ function App() {
     <Suspense fallback={<Loading />}>
       <Routes>
         
-        {/* 1. PUBLIC AREA: Halaman Showcase dipindah ke "/welcome" agar root "/" bisa dipakai Dashboard */}
-        <Route path="/welcome" element={<LumiereShowcase />} />
+        {/* 1. PUBLIC AREA: Halaman Showcase dipasang kembali ke root "/" */}
+        <Route path="/" element={<LumiereShowcase />} />
+        <Route path="/welcome" element={<Navigate to="/" replace />} />
 
         {/* 2. ADMIN & USER HISTORY AREA: Dibungkus MainLayout (Ada Sidebar) */}
-        <Route element={<MainLayout />}>
-          {/* PERBAIKAN: Mengubah path dari "/dashboard" menjadi "/" agar langsung terbuka saat aplikasi dijalankan */}
-          <Route path="/" element={<Dashboard />} />
-          
-          {/* Mengarahkan sisa traffic lama /dashboard ke root "/" agar tidak patah/error */}
-          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        <Route path="/admin" element={<MainLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Navigate to="/admin" replace />} />
           
           {/* Implementasi Modul 10 & History */}
-          <Route path="/order-history" element={<OrderHistory />} />
-          <Route path="/atelier-lab" element={<LumiereShowcase />} /> 
+          <Route path="order-history" element={<OrderHistory />} />
+          <Route path="atelier-lab" element={<LumiereShowcase />} /> 
           
           {/* Orders Management */}
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="orders/:id" element={<OrderDetail />} />
           
           {/* Customers Management */}
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/customers/:id" element={<CustomersDetail />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="customers/:id" element={<CustomersDetail />} />
+
+          {/* Membership Management */}
+          <Route path="membership" element={<Membership />} />
+
+          {/* Feedback & Review */}
+          <Route path="feedback" element={<Feedback />} />
+
+          {/* Marketing & Engagement */}
+          <Route path="marketing" element={<Marketing />} />
+
+          {/* Catalog Management */}
+          <Route path="catalog" element={<AdminCatalog />} />
 
           {/* Fallback 404 (Di dalam MainLayout) */}
           <Route

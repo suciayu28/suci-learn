@@ -9,8 +9,8 @@ export default function MainLayout() {
         <div id="app-container" className="bg-[#F3F3F3] min-h-screen flex font-['Poppins'] text-[#262626]">
             <Sidebar />
 
-            {/* PERBAIKAN: Menambahkan pl-28 (padding left) pada main-content agar Header, Main, dan Footer tidak tertabrak/tertutup oleh Sidebar yang posisinya fixed */}
-            <div id="main-content" className="flex-1 flex flex-col min-w-0 pl-28 pr-6 py-6">
+            {/* PERBAIKAN: Menambahkan pl-[304px] pada main-content agar Header, Main, dan Footer tidak tertabrak/tertutup oleh Sidebar yang posisinya fixed */}
+            <div id="main-content" className="flex-1 flex flex-col min-w-0 pl-[304px] pr-6 py-6">
                 
                 {/* Menghapus pembungkus p-6 sebelumnya agar margin-left terpusat dari parent dan layouting konsisten */}
                 <Header />

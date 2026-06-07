@@ -1,160 +1,403 @@
-import React from "react";
-import { FiArrowUpRight, FiStar, FiShoppingBag, FiZap, FiMail, FiInstagram, FiTwitter } from "react-icons/fi";
-
-// --- IMPORT KOMPONEN SHADCN UI ---
-// Jika masih error "Failed to resolve", pastikan folder components/ui/ memang ada di src
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import React, { useState, useEffect } from "react";
+import { 
+  FiUsers, 
+  FiShoppingBag, 
+  FiAward, 
+  FiHeart, 
+  FiTrendingUp, 
+  FiArrowUpRight, 
+  FiStar,
+  FiActivity
+} from "react-icons/fi";
+import { 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  Tooltip as ChartTooltip, 
+  BarChart, 
+  Bar, 
+  Cell, 
+  PieChart, 
+  Pie, 
+  Legend 
+} from "recharts";
+import { getCRMData } from "../lib/crmData";
+import PageHeader from "../components/PageHeader";
 
 const Dashboard = () => {
-  const featuredProducts = [
-    { name: "Botanical Serum", price: "Rp 650.000", img: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600" },
-    {
-      name: "Glow Cushion",
-      price: "Rp 525.000",
-      img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600",
-    },
-    { name: "Hydrating Mist", price: "Rp 280.000", img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600" }
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    // Simulate API fetch delay
+    const timer = setTimeout(() => {
+      const db = getCRMData();
+      setData(db);
+      setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4F5C18]"></div>
+        <p className="text-xs font-bold uppercase tracking-widest text-[#4F5C18] mt-4">Loading Analytics...</p>
+      </div>
+    );
+  }
+
+  const { customers, orders, reviews, campaigns } = data;
+
+  // 1. Calculate CRM KPI Statistics
+  const totalCustomers = customers.length;
+  const activeCustomers = customers.filter(c => c.status === "Active").length;
+  const inactiveCustomers = totalCustomers - activeCustomers;
+  
+  const completedOrders = orders.filter(o => o.status === "Completed");
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const avgOrderValue = completedOrders.length > 0 ? Math.round(totalRevenue / completedOrders.length) : 0;
+  
+  const goldCount = customers.filter(c => c.loyalty === "Gold").length;
+  const silverCount = customers.filter(c => c.loyalty === "Silver").length;
+  const bronzeCount = customers.filter(c => c.loyalty === "Bronze").length;
+
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) 
+    : "4.8";
+
+  // 2. Prepare Chart Data
+  // Sales Trend monthly breakdown (group from orders)
+  const salesTrendData = [
+    { month: "Jan", Sales: 42000000 },
+    { month: "Feb", Sales: 55000000 },
+    { month: "Mar", Sales: 78000000 },
+    { month: "Apr", Sales: 95000000 },
+    { month: "May", Sales: 120000000 },
+    { month: "Jun", Sales: totalRevenue / 1000 } // scaled in thousands or direct value
   ];
 
+  // Scale sales trend down to millions for readability
+  const displaySalesData = [
+    { month: "Jan", Revenue: 42 },
+    { month: "Feb", Revenue: 55 },
+    { month: "Mar", Revenue: 78 },
+    { month: "Apr", Revenue: 95 },
+    { month: "May", Revenue: 110 },
+    { month: "Jun", Revenue: Math.round(totalRevenue / 1000000) }
+  ];
+
+  // User Source breakdown
+  const sourceCounts = customers.reduce((acc, c) => {
+    acc[c.source] = (acc[c.source] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sourceChartData = Object.keys(sourceCounts).map(source => ({
+    name: source,
+    value: sourceCounts[source]
+  }));
+
+  const COLORS = ["#4F5C18", "#8F9A5D", "#D4DBC0", "#262626"];
+
+  // Membership breakdown
+  const membershipChartData = [
+    { name: "Bronze", Count: bronzeCount, fill: "#CD7F32" },
+    { name: "Silver", Count: silverCount, fill: "#C0C0C0" },
+    { name: "Gold", Count: goldCount, fill: "#FFD700" }
+  ];
+
+  const recentOrders = orders.slice(0, 5);
+  const recentReviews = reviews.slice(0, 5);
+
   return (
-    /* PERBAIKAN: Menggunakan w-full dan menghapus batasan max-width agar konten memenuhi layar */
-    <div className="w-full space-y-16 font-['Poppins'] text-[#262626] bg-white min-h-screen overflow-x-hidden">
-      
-      {/* 1. HERO SECTION: Full Width & Immersive */}
-      <div className="relative grid grid-cols-12 gap-0 bg-gradient-to-br from-[#F4F3FF] to-[#E8E1DA] overflow-hidden min-h-[600px] lg:h-screen">
-        <div className="col-span-12 lg:col-span-7 p-8 md:p-16 lg:p-24 z-10 flex flex-col justify-center">
-          <div className="flex items-center gap-4 mb-8">
-            <span className="w-12 h-[2px] bg-[#4F5C18]"></span>
-            <p className="text-[10px] font-bold uppercase tracking-[0.6em] text-[#4F5C18]">Seni Kecantikan Organik</p>
-          </div>
-          
-          {/* PERBAIKAN: Menggunakan clamp agar teks tidak jadi terlalu kecil saat layar sempit */}
-          <h1 className="text-[clamp(2.5rem,8vw,110px)] font-['Playfair_Display'] italic font-medium leading-[0.9] text-[#262626] tracking-tighter">
-            Pancarkan <br /> 
-            <span className="lg:ml-16 relative inline-block">Pesona Alami</span> 
-            <br /> Setiap Hari
-          </h1>
-          
-          <div className="mt-14 flex flex-wrap items-center gap-10">
-            <button className="group flex items-center gap-4 bg-[#262626] text-white px-10 py-5 md:px-12 md:py-6 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#4F5C18] transition-all duration-500 shadow-2xl border-none">
-              Lihat Koleksi 
-              <div className="bg-[#4F5C18] text-white p-1.5 rounded-full group-hover:rotate-45 transition-transform duration-500">
-                <FiArrowUpRight size={16}/>
-              </div>
-            </button>
-            <span className="text-[11px] font-bold text-[#4F5C18] border-b-2 border-[#4F5C18] pb-1 cursor-pointer hover:tracking-[0.2em] transition-all">
-              CERITA KAMI
+    <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins text-[#262626]">
+      <PageHeader title="CRM Dashboard" breadcrumb={["Overview", "Control Panel"]}>
+        <div className="flex items-center gap-2 px-4 py-2 bg-[#F3F3F3] rounded-xl text-xs font-bold text-[#4F5C18]">
+          <FiActivity className="animate-pulse" /> Live System Monitor
+        </div>
+      </PageHeader>
+
+      {/* 1. KPI COUNTERS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-6">
+        
+        {/* KPI: Customer Count */}
+        <div className="bg-white rounded-[2rem] p-6 border border-[#F3F3F3] shadow-sm hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3.5 bg-[#4F5C18]/10 rounded-2xl text-[#4F5C18]"><FiUsers size={20} /></div>
+            <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+              Active: {activeCustomers}
             </span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Customers</p>
+          <h3 className="text-3xl font-playfair font-bold mt-1 text-[#262626]">{totalCustomers}</h3>
+          <div className="mt-4 pt-3 border-t border-[#F3F3F3] flex justify-between text-[10px] text-gray-500 font-medium">
+            <span>Inactive: {inactiveCustomers}</span>
+            <span className="text-gray-400">Join rate +12%</span>
           </div>
         </div>
 
-        {/* Gambar Hero - Full Cover */}
-        <div className="hidden lg:block col-span-5 relative">
-          <img 
-            src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200" 
-            className="w-full h-full object-cover grayscale-[15%] hover:grayscale-0 transition-all duration-1000"
-            alt="Produk Utama Lumiere"
-          />
+        {/* KPI: Sales Volume */}
+        <div className="bg-white rounded-[2rem] p-6 border border-[#F3F3F3] shadow-sm hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3.5 bg-amber-50 rounded-2xl text-amber-600"><FiShoppingBag size={20} /></div>
+            <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+              {completedOrders.length} Completed
+            </span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</p>
+          <h3 className="text-3xl font-playfair font-bold mt-1 text-[#262626] truncate">
+            Rp {totalRevenue.toLocaleString("id-ID")}
+          </h3>
+          <div className="mt-4 pt-3 border-t border-[#F3F3F3] flex justify-between text-[10px] text-gray-500 font-medium">
+            <span>Avg Order: Rp {avgOrderValue.toLocaleString("id-ID")}</span>
+            <span className="text-emerald-600 font-bold flex items-center gap-0.5"><FiTrendingUp /> +8%</span>
+          </div>
+        </div>
+
+        {/* KPI: Memberships */}
+        <div className="bg-white rounded-[2rem] p-6 border border-[#F3F3F3] shadow-sm hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3.5 bg-blue-50 rounded-2xl text-blue-600"><FiAward size={20} /></div>
+            <div className="flex gap-1 text-[8px] font-black uppercase">
+              <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">G: {goldCount}</span>
+              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">S: {silverCount}</span>
+            </div>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loyalty Members</p>
+          <h3 className="text-3xl font-playfair font-bold mt-1 text-[#262626]">{goldCount + silverCount + bronzeCount}</h3>
+          <div className="mt-4 pt-3 border-t border-[#F3F3F3] flex justify-between text-[10px] text-gray-500 font-medium">
+            <span>Bronze Tier: {bronzeCount}</span>
+            <span className="text-gray-400">Tier upgrade +4%</span>
+          </div>
+        </div>
+
+        {/* KPI: Feedback Rating */}
+        <div className="bg-white rounded-[2rem] p-6 border border-[#F3F3F3] shadow-sm hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3.5 bg-rose-50 rounded-2xl text-rose-600"><FiHeart size={20} /></div>
+            <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+              <FiStar className="fill-rose-600" /> {reviews.length} Feedbacks
+            </span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Customer Satisfaction</p>
+          <h3 className="text-3xl font-playfair font-bold mt-1 text-[#262626]">{averageRating} / 5.0</h3>
+          <div className="mt-4 pt-3 border-t border-[#F3F3F3] flex justify-between text-[10px] text-gray-500 font-medium">
+            <span>Approval: 95%</span>
+            <span className="text-gray-400">Spam flagged: {reviews.filter(r => r.status === "Spam").length}</span>
+          </div>
         </div>
       </div>
 
-      {/* 2. PRODUCTS & NEWSLETTER SECTION */}
-      {/* PERBAIKAN: Menggunakan padding yang fleksibel (px-6 sampai px-20) */}
-      <div className="px-6 md:px-12 lg:px-20">
-        <div className="grid grid-cols-12 gap-10">
-          
-          {/* Esensi Mingguan */}
-          <div className="col-span-12 lg:col-span-8 bg-white rounded-[3rem] md:rounded-[4rem] p-8 md:p-12 shadow-sm border border-gray-50">
-             <div className="flex justify-between items-end mb-12">
-               <div>
-                 <p className="text-[9px] font-black uppercase tracking-[0.4em] text-[#4F5C18] mb-2">Pilihan Editor</p>
-                 <h3 className="text-3xl md:text-4xl font-['Playfair_Display'] italic font-medium">Esensi Mingguan</h3>
-               </div>
-               <p className="text-[11px] font-bold border-b border-[#262626] pb-1 cursor-pointer hover:text-[#4F5C18] transition-colors">LIHAT SEMUA</p>
-             </div>
+      {/* 2. TABS NAVIGATION */}
+      <div className="flex gap-2 border-b border-[#F3F3F3] pb-4 mb-8">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === "overview" ? "bg-[#262626] text-white" : "bg-white text-gray-400 hover:text-[#262626]"
+          }`}
+        >
+          Sales Overview
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === "analytics" ? "bg-[#262626] text-white" : "bg-white text-gray-400 hover:text-[#262626]"
+          }`}
+        >
+          Customer Analytics
+        </button>
+        <button
+          onClick={() => setActiveTab("logs")}
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+            activeTab === "logs" ? "bg-[#262626] text-white" : "bg-white text-gray-400 hover:text-[#262626]"
+          }`}
+        >
+          Recent Activity Logs
+        </button>
+      </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredProducts.map((prod, i) => (
-                <div key={i} className="group cursor-pointer">
-                  <div className="aspect-[4/5] bg-[#F3F3F3] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden mb-6 shadow-sm transition-transform group-hover:-translate-y-2 duration-500">
-                    <img src={prod.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={prod.name} />
+      {/* 3. TABS CONTENT */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Sales chart */}
+          <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h4 className="font-playfair font-bold text-xl text-[#262626]">Revenue Growth</h4>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-1">Monthly sales volume (in Millions IDR)</p>
+              </div>
+            </div>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={displaySalesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4F5C18" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#4F5C18" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" stroke="#A3A3A3" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#A3A3A3" fontSize={11} tickLine={false} axisLine={false} />
+                  <ChartTooltip formatter={(value) => [`Rp ${value} Juta`, "Revenue"]} contentStyle={{ fontFamily: "Poppins", fontSize: "11px", borderRadius: "12px", border: "1px solid #F3F3F3" }} />
+                  <Area type="monotone" dataKey="Revenue" stroke="#4F5C18" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Active Campaigns */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Marketing Campaign Performance</h4>
+              <div className="space-y-4">
+                {campaigns.slice(0, 3).map((camp) => (
+                  <div key={camp.id} className="p-4 bg-[#F3F3F3]/40 rounded-2xl border border-[#F3F3F3]/50 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-sm text-[#262626] leading-none mb-1.5">{camp.name}</p>
+                      <span className="text-[9px] font-black uppercase text-gray-400 bg-white border border-gray-100 px-2 py-0.5 rounded-lg tracking-widest">
+                        {camp.source}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-[#4F5C18]">{camp.conversions} Sales</p>
+                      <p className="text-[9px] font-semibold text-gray-400">Reach: {(camp.reach / 1000).toFixed(0)}k</p>
+                    </div>
                   </div>
-                  <h4 className="font-['Playfair_Display'] italic font-bold text-xl text-[#262626]">{prod.name}</h4>
-                  <p className="text-sm text-[#4F5C18] font-bold mt-2 tracking-widest">{prod.price}</p>
+                ))}
+              </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-[#F3F3F3] text-center">
+              <a href="/marketing" className="text-[10px] font-black uppercase tracking-widest text-[#4F5C18] hover:tracking-[0.4em] transition-all flex items-center justify-center gap-2">
+                Manage Marketing Campaigns <FiArrowUpRight />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "analytics" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Customer Sources */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
+            <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Acquisition Channels</h4>
+            <div className="h-72 w-full flex flex-col justify-between">
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={sourceChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {sourceChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip contentStyle={{ fontFamily: "Poppins", fontSize: "11px", borderRadius: "12px" }} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-center text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                Instagram and TikTok remain the top client intake mediums
+              </p>
+            </div>
+          </div>
+
+          {/* Membership Tier Distribution */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
+            <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Membership Tiers</h4>
+            <div className="h-72 w-full flex flex-col justify-between">
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={membershipChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="name" stroke="#A3A3A3" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#A3A3A3" fontSize={11} tickLine={false} axisLine={false} />
+                    <ChartTooltip contentStyle={{ fontFamily: "Poppins", fontSize: "11px", borderRadius: "12px" }} />
+                    <Bar dataKey="Count" radius={[10, 10, 0, 0]}>
+                      {membershipChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-center text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                Gold levels make up {(goldCount / totalCustomers * 100).toFixed(0)}% of members
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "logs" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Recent Orders */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="font-playfair font-bold text-xl text-[#262626]">Recent Sales Transactions</h4>
+              <a href="/orders" className="text-[9px] font-bold text-[#4F5C18] uppercase tracking-widest border-b border-[#4F5C18] pb-0.5">View All</a>
+            </div>
+            <div className="space-y-4">
+              {recentOrders.map((ord) => (
+                <div key={ord.order_id} className="flex justify-between items-center p-4 bg-[#F3F3F3]/30 rounded-2xl border border-[#F3F3F3]/50">
+                  <div>
+                    <p className="font-bold text-sm text-[#262626] mb-1">{ord.customerName}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{ord.order_id} • {ord.paymentMethod}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-[#4F5C18] text-sm">Rp {ord.totalPrice.toLocaleString("id-ID")}</p>
+                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
+                      ord.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
+                      ord.status === "Pending" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                    }`}>{ord.status}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Newsletter Box */}
-          <div className="col-span-12 lg:col-span-4 bg-[#262626] rounded-[3rem] md:rounded-[4rem] p-10 md:p-12 text-white flex flex-col justify-center relative overflow-hidden">
-            <div className="relative z-10">
-              <h4 className="text-4xl md:text-5xl font-['Playfair_Display'] italic font-medium leading-tight mb-8">
-                Gabung di <br/> <span className="text-[#4F5C18]">Atelier</span>
-              </h4>
-              
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                <Input 
-                  type="email" 
-                  placeholder="Alamat email Anda" 
-                  className="w-full bg-white/10 border-none rounded-2xl px-6 py-7 focus-visible:ring-[#4F5C18] text-sm text-white placeholder:text-gray-500"
-                />
-                <button className="w-full bg-[#4F5C18] text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#262626] transition-all duration-300 border-none shadow-xl">
-                  BERLANGGANAN SEKARANG
-                </button>
-              </form>
+          {/* Recent Reviews */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="font-playfair font-bold text-xl text-[#262626]">Latest Feedback & Reviews</h4>
+              <a href="/feedback" className="text-[9px] font-bold text-[#4F5C18] uppercase tracking-widest border-b border-[#4F5C18] pb-0.5">View All</a>
             </div>
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#4F5C18] rounded-full blur-[80px] opacity-20"></div>
+            <div className="space-y-4">
+              {recentReviews.map((rev) => (
+                <div key={rev.id} className="p-4 bg-[#F3F3F3]/30 rounded-2xl border border-[#F3F3F3]/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="font-bold text-sm text-[#262626]">{rev.customerName}</p>
+                    <div className="flex gap-0.5 text-amber-400">
+                      {Array.from({ length: 5 }).map((_, rIdx) => (
+                        <FiStar key={rIdx} className={rIdx < rev.rating ? "fill-amber-400" : ""} size={12} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 italic line-clamp-2 leading-relaxed">"{rev.comment}"</p>
+                  <div className="mt-2.5 flex justify-between items-center">
+                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
+                      rev.sentiment === "Positive" ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
+                    }`}>{rev.sentiment}</span>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{rev.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* 3. MARQUEE SECTION: Luxury Ticker */}
-      <div className="bg-[#262626] py-16 overflow-hidden flex relative border-y border-white/5">
-        <div className="flex gap-24 animate-marquee items-center whitespace-nowrap">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-12 text-white font-['Playfair_Display'] italic text-2xl tracking-wide opacity-80">
-              <span>99% Organic Ingredients</span>
-              <FiZap className="text-[#4F5C18]" />
-              <span>Free Delivery Over Rp 500k</span>
-              <FiShoppingBag className="text-[#4F5C18]" />
-              <span>Dermatologically Tested</span>
-              <div className="w-2 h-2 bg-[#4F5C18] rounded-full"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 4. FOOTER */}
-      <div className="px-6 md:px-12 lg:px-20 space-y-12">
-        <Separator className="bg-gray-200" />
-        
-        <footer className="flex flex-col md:flex-row justify-between items-center gap-12 pb-16">
-          <div className="flex items-center gap-6">
-            <Avatar className="h-14 w-14 md:h-16 md:w-16 ring-4 ring-[#4F5C18]/10">
-              <AvatarImage src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" />
-              <AvatarFallback className="bg-[#4F5C18] text-white font-bold">LM</AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-4xl md:text-5xl font-['Playfair_Display'] italic font-bold text-[#262626]">Lumière</h2>
-              <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-400 mt-2">© 2026 Luxury Atelier Paris • Jakarta</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-12">
-            <div className="flex gap-8">
-              <FiInstagram size={24} className="hover:text-[#4F5C18] cursor-pointer opacity-40 hover:opacity-100 transition-all" />
-              <FiTwitter size={24} className="hover:text-[#4F5C18] cursor-pointer opacity-40 hover:opacity-100 transition-all" />
-            </div>
-            <div className="hidden lg:flex gap-10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
-              <span className="hover:text-[#4F5C18] cursor-pointer transition-colors">Privasi</span>
-              <span className="hover:text-[#4F5C18] cursor-pointer transition-colors">Syarat</span>
-            </div>
-          </div>
-        </footer>
-      </div>
+      )}
     </div>
   );
 };

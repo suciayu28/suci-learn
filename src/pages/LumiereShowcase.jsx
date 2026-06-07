@@ -15,11 +15,13 @@ import AtelierProductCard from "../components/data-display/AtelierProductCard";
 import HeroBanner from "../components/section/HeroBanner";
 import ContentSection from "../components/section/ContentSection";
 import Footer from "../components/layout/Footer";
+import { getCRMData } from "../lib/crmData";
 
 const LumiereShowcase = () => {
   const navigate = useNavigate(); // Inisialisasi navigasi
   
   // --- STATE ---
+  const [products, setProducts] = useState([]);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -39,25 +41,21 @@ const LumiereShowcase = () => {
     }
   }, [subscribed]); // Berjalan setiap kali nilai state 'subscribed' berubah
 
+  // Load products from localStorage mock db
+  useEffect(() => {
+    const db = getCRMData();
+    setProducts(db.products || []);
+  }, []);
+
   // --- DATA PRODUK ---
   const categories = ["Semua", "Perawatan Kulit", "Tata Rias", "Parfum", "Alat Kecantikan"];
-  const allProducts = [
-    { id: 1, title: "Velvet Lipstick", price: "Rp 350.000", tag: "Tata Rias", img: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&q=80&w=600" },
-    { id: 2, title: "Glow Cushion", price: "Rp 525.000", tag: "Tata Rias", img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600" },
-    { id: 3, title: "Rose Serum", price: "Rp 850.000", tag: "Perawatan Kulit", img: "https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&q=80&w=600" },
-    { id: 4, title: "Silk Blush", price: "Rp 420.000", tag: "Tata Rias", img: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=800" },
-    { id: 5, title: "Midnight Oud", price: "Rp 1.200.000", tag: "Parfum", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600" },
-    { id: 6, title: "Facial Roller", price: "Rp 275.000", tag: "Alat Kecantikan", img: "https://images.unsplash.com/photo-1619451334792-150fd785ee74?auto=format&fit=crop&q=80&w=600" },
-    { id: 7, title: "Cleansing Balm", price: "Rp 310.000", tag: "Perawatan Kulit", img: "https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?auto=format&fit=crop&q=80&w=600" },
-    { id: 8, title: "Eye Palette", price: "Rp 680.000", tag: "Tata Rias", img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=600" },
-  ];
 
   // --- LOGIC ---
   const filteredProducts = useMemo(() => {
-    let result = allProducts;
-    if (activeCategory !== "Semua") result = allProducts.filter(p => p.tag === activeCategory);
+    let result = products;
+    if (activeCategory !== "Semua") result = products.filter(p => p.tag === activeCategory);
     return showAll ? result : result.slice(0, 4);
-  }, [activeCategory, showAll]);
+  }, [products, activeCategory, showAll]);
 
   const handleAddToBag = (product) => {
     setCartItems(prev => [...prev, { ...product, cartId: Date.now() }]);
@@ -72,7 +70,26 @@ const LumiereShowcase = () => {
   };
 
   return (
-    <div className="bg-[#F3F3F3] min-h-screen font-poppins text-[#262626] overflow-x-hidden selection:bg-[#4F5C18] selection:text-white">
+    <div className="bg-[#F3F3F3] min-h-screen font-poppins text-[#262626] overflow-x-hidden selection:bg-[#4F5C18] selection:text-white pt-24">
+      
+      {/* TOP HEADER NAVBAR */}
+      <header className="w-full bg-white/80 backdrop-blur-xl border-b border-gray-100 py-5 px-12 flex justify-between items-center fixed top-0 left-0 right-0 z-[90] shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center font-serif italic font-black text-base shadow-md shadow-black/10">
+            L.
+          </div>
+          <span className="font-serif font-black text-lg tracking-tight text-black leading-none">Lumière</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate("/login")}
+            className="px-6 py-3 bg-[#4F5C18] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:opacity-90 transition-all shadow-md shadow-[#4F5C18]/15 cursor-pointer"
+          >
+            Admin Panel
+          </button>
+        </div>
+      </header>
       
       {/* FLOATING BAG & NAVIGATION */}
       <div className="fixed top-8 right-8 z-[100] flex flex-col items-end gap-3">
@@ -122,16 +139,16 @@ const LumiereShowcase = () => {
             {/* ACTION BUTTONS */}
             <div className="space-y-3 pt-4 border-t border-gray-50">
               <button 
-                onClick={() => navigate("/order-history")}
+                onClick={() => navigate("/admin/order-history")}
                 className="w-full py-4 bg-[#4F5C18] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#3a4412] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#4F5C18]/20"
               >
                 <FiClock /> Riwayat Pesanan
               </button>
               <button 
-                onClick={() => navigate("/customers")}
-                className="w-full py-4 bg-white border border-[#F3F3F3] text-gray-400 text-[9px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-gray-50 transition-all"
+                onClick={() => navigate("/login")}
+                className="w-full py-4 bg-white border border-[#F3F3F3] text-gray-400 text-[9px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-gray-50 transition-all cursor-pointer"
               >
-                Customer Management
+                Admin Panel Login
               </button>
             </div>
           </div>

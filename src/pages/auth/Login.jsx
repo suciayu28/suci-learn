@@ -23,7 +23,10 @@ export default function Login() {
             username: dataForm.email,
             password: dataForm.password,
         })
-        .then(() => navigate("/"))
+        .then(() => {
+            localStorage.setItem("admin_session", "true");
+            navigate("/admin");
+        })
         .catch((err) => setError(err.response?.data?.message || "Akses Ditolak!"))
         .finally(() => setLoading(false));
     }
