@@ -8,7 +8,8 @@ import {
   HiOutlineIdentification,
   HiOutlineChatBubbleLeftRight,
   HiOutlineMegaphone,
-  HiOutlineTag
+  HiOutlineTag,
+  HiOutlineReceiptPercent // Ditambahkan untuk ikon Promo & Sales
 } from "react-icons/hi2";
 
 const Sidebar = () => {
@@ -79,6 +80,15 @@ const Sidebar = () => {
         >
           <HiOutlineMegaphone size={20} className="shrink-0" />
           <span className="text-[10px] uppercase tracking-widest">Marketing</span>
+        </NavLink>
+
+        {/* --- MENU BARU: PROMO & SALES --- */}
+        <NavLink 
+          to="/admin/promo" 
+          className={({ isActive }) => `${baseStyle} ${isActive ? activeStyle : ""}`}
+        >
+          <HiOutlineReceiptPercent size={20} className="shrink-0" />
+          <span className="text-[10px] uppercase tracking-widest">Promo & Sales</span>
         </NavLink>
 
         {/* New Catalog Manager page */}

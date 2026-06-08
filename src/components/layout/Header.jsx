@@ -1,98 +1,109 @@
 import { useState } from "react";
-import { FiSearch, FiCalendar, FiDownload, FiPlus, FiBell, FiX, FiArrowRight } from "react-icons/fi";
+import { FiSearch, FiBell, FiChevronDown, FiX, FiArrowRight } from "react-icons/fi";
 
 const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
 
   return (
-    <div className="flex items-center justify-between py-4 pl-24 relative font-['Poppins']">
-      {/* BRANDING SECTION */}
-      <div>
-        {/* Playfair Display untuk judul brand */}
-        <h1 className="text-3xl font-['Playfair_Display'] italic font-semibold text-[#262626] tracking-tight">
-          Lumière Cosmetics
-        </h1>
-        {/* Poppins Bold untuk sub-label sistem dengan warna Primary Olive */}
-        <p className="text-[10px] text-[#4F5C18] font-bold uppercase tracking-[0.4em] mt-1">
-          Lumière Management System
-        </p>
-      </div>
-
-      <div className="flex items-center gap-6">
-        {/* SEARCH BAR WRAPPER */}
-        <div className="relative">
-          <div className={`hidden md:flex items-center gap-3 bg-white border ${showSearch ? 'border-[#4F5C18] ring-1 ring-[#4F5C18]' : 'border-[#F3F3F3]'} px-5 py-2.5 rounded-2xl shadow-sm transition-all duration-300`}>
-            <FiSearch className={showSearch ? "text-[#4F5C18]" : "text-gray-300"} />
+    // PY-5 & PX-10: Membuat tinggi total header jauh lebih tebal, luas, dan berwibawa
+    <div className="flex items-center justify-between py-5 px-10 bg-white border-b border-gray-100 sticky top-0 z-50 font-['Poppins'] w-full">
+      
+      {/* SISI KIRI: SEARCH BAR KAPSUL (UKURAN BESAR) */}
+      <div className="relative w-full max-w-lg"> {/* Diperlebar dari max-w-md ke max-w-lg */}
+        <div 
+          className={`flex items-center justify-between bg-gray-50/80 border ${
+            showSearch ? 'border-[#4F5C18] bg-white ring-4 ring-[#4F5C18]/5' : 'border-gray-200'
+          } pl-5 pr-3 py-3 rounded-full transition-all duration-200`} // PY-3: Membuat kapsul lebih gemuk & tinggi
+        >
+          <div className="flex items-center gap-3 w-full">
+            <FiSearch className={showSearch ? "text-[#4F5C18]" : "text-gray-400"} size={19} /> {/* Ikon diperbesar */}
             <input 
               type="text" 
-              placeholder="Search orders..." 
+              placeholder="Cari produk, order, atau inventaris kosmetik..." 
               onFocus={() => setShowSearch(true)}
               onBlur={() => setTimeout(() => setShowSearch(false), 200)}
-              className="bg-transparent outline-none text-[12px] font-medium w-48 text-[#262626] placeholder:text-gray-300" 
+              className="bg-transparent outline-none text-[14px] font-medium w-full text-[#262626] placeholder:text-gray-400" // Teks naik ke 14px
             />
           </div>
-
-          {/* --- POP-UP SEARCH RESULTS (Anatomy: Rounded 3rem) --- */}
-          {showSearch && (
-            <div className="absolute top-16 right-0 w-[350px] bg-white border border-[#F3F3F3] shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2.5rem] p-6 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="flex justify-between items-center mb-6 px-1">
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">Quick Results</span>
-                <FiX className="text-gray-300 cursor-pointer hover:text-[#262626] transition-colors" onClick={() => setShowSearch(false)} />
-              </div>
-              
-              <div className="space-y-4">
-                {[
-                  { name: "Matte Lipstick Rose", cat: "Inventory" },
-                  { name: "Order #8842", cat: "Sales" },
-                  { name: "Glow Serum v2", cat: "Stock" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-[#F4F3FF] rounded-[1.5rem] cursor-pointer transition-all group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#F2F7D6] rounded-xl flex items-center justify-center text-[#4F5C18] group-hover:bg-[#4F5C18] group-hover:text-white transition-all">
-                        <FiSearch size={14} />
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-bold text-[#262626] tracking-tight">{item.name}</p>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{item.cat}</p>
-                      </div>
-                    </div>
-                    <FiArrowRight className="text-gray-200 group-hover:text-[#4F5C18] transition-all" size={16} />
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-5 border-t border-[#F3F3F3] text-center">
-                <button className="text-[10px] font-bold uppercase tracking-widest text-[#4F5C18] hover:tracking-[0.4em] transition-all">
-                  View All Results
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ACTION BUTTONS (Anatomy: Capsule & Squircle) */}
-        <div className="flex items-center gap-3 border-l border-[#F3F3F3] pl-6">
-          <button title="Calendar" className="p-2.5 text-gray-400 hover:text-[#4F5C18] transition-colors">
-            <FiCalendar size={20} />
-          </button>
           
-          {/* Export Button (Grey/Outline) */}
-          <button className="bg-white border border-[#F3F3F3] text-[#262626] px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-[#F3F3F3] transition-all shadow-sm">
-            <FiDownload size={15} /> Export
-          </button>
-
-          {/* Add Product Button (Primary Olive / Black Contrast) */}
-          <button className="bg-[#262626] text-white px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-[#4F5C18] transition-all shadow-lg shadow-black/5">
-            <FiPlus size={15} /> Add Product
-          </button>
-
-          {/* Notification with Purple Accent Dot */}
-          <div className="relative ml-2 cursor-pointer group">
-            <FiBell size={22} className="text-gray-400 group-hover:text-[#262626] transition-colors" />
-            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#4F5C18] rounded-full border-2 border-white"></span>
+          {/* Badge Pintasan Keyboard ⌘K (Lebih Tebal) */}
+          <div className="bg-white border border-gray-200 text-gray-500 font-mono text-[12px] font-bold px-2.5 py-1 rounded-lg shadow-2xs select-none">
+            ⌘K
           </div>
         </div>
+
+        {/* --- POP-UP SEARCH RESULTS (Menyesuaikan Skala Besar) --- */}
+        {showSearch && (
+          <div className="absolute top-16 left-0 w-[450px] bg-white border border-gray-100 shadow-[0_25px_60px_rgba(0,0,0,0.08)] rounded-2xl p-6 z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="flex justify-between items-center mb-4 px-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">Hasil Pencarian Cepat</span>
+              <FiX className="text-gray-400 cursor-pointer hover:text-[#262626]" size={18} onClick={() => setShowSearch(false)} />
+            </div>
+            
+            <div className="space-y-1.5">
+              {[
+                { name: "Matte Lipstick Rose", cat: "Inventory" },
+                { name: "Order #8842", cat: "Sales" },
+                { name: "Glow Serum v2", cat: "Stock" }
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3.5 hover:bg-gray-50 rounded-xl cursor-pointer transition-all group">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-9 h-9 bg-[#F2F7D6]/70 rounded-lg flex items-center justify-center text-[#4F5C18]">
+                      <FiSearch size={15} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-[#262626]">{item.name}</p>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{item.cat}</p>
+                    </div>
+                  </div>
+                  <FiArrowRight className="text-gray-300 opacity-0 group-hover:opacity-100 group-hover:text-[#4F5C18] transition-all" size={16} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* SISI KANAN: NOTIFIKASI & PROFIL USER (UKURAN BESAR) */}
+      <div className="flex items-center gap-6"> {/* Jarak antar item diperlebar */}
+        
+        {/* Tombol Notifikasi (Lebih Besar & Bulat Mantap) */}
+        <div className="relative p-3 bg-white border border-gray-200 rounded-full shadow-xs text-gray-400 hover:text-gray-600 hover:shadow-sm cursor-pointer transition-all group">
+          <FiBell size={22} /> {/* Ukuran ikon naik ke 22 */}
+          {/* Dot Notifikasi Merah */}
+          <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+        </div>
+
+        {/* Garis Pembatas Vertikal Lebih Tinggi */}
+        <div className="h-10 w-px bg-gray-200 mx-1"></div>
+
+        {/* INFORMASI USER AVATAR */}
+        <div className="flex items-center gap-4 cursor-pointer group select-none">
+          {/* Avatar Diperbesar dari w-10 ke w-12 */}
+          <div className="relative">
+            <div className="w-12 h-12 bg-[#4F5C18] text-white font-bold text-base rounded-full flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
+              LC
+            </div>
+            {/* Status Online Indicator (Lebih Kentara) */}
+            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm"></span>
+          </div>
+
+          {/* Teks Identitas Pengguna (Ukuran Font Dinaikkan) */}
+          <div className="hidden sm:block text-left">
+            <h4 className="text-[15px] font-bold text-gray-800 tracking-tight leading-tight group-hover:text-[#4F5C18] transition-colors">
+              Lumière Admin
+            </h4>
+            <p className="text-[11px] text-gray-400 font-semibold tracking-wide leading-tight mt-1">
+              Utama Manager
+            </p>
+          </div>
+
+          {/* Chevron Arrow Down */}
+          <FiChevronDown className="text-gray-400 group-hover:text-gray-600 transition-colors ml-1" size={18} />
+        </div>
+
+      </div>
+
     </div>
   );
 };
