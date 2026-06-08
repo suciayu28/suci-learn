@@ -6,16 +6,18 @@ import {
   FaAward, 
   FaCrown, 
   FaEdit, 
-  FaUndo, 
   FaCheckCircle, 
   FaTimesCircle, 
   FaTimes, 
   FaSave,
-  FaSearch
+  FaSearch,
+  FaChevronLeft,   // Tambahan icon panah kiri
+  FaChevronRight   // Tambahan icon panah kanan
 } from "react-icons/fa";
 import { getCRMData, saveCRMData } from "../lib/crmData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { LOYALTY_TIERS, MEMBERSHIP_STATUSES } from "@/data/membershipData";
 
 const Membership = () => {
   const [customers, setCustomers] = useState([]);
@@ -23,6 +25,10 @@ const Membership = () => {
   const [selectedTier, setSelectedTier] = useState("All");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   
+  // ─── STATE UNTUK PAGINATION ────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Mengubah batas tampilan ke 5 baris per halaman agar rapi
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -36,8 +42,13 @@ const Membership = () => {
 
   useEffect(() => {
     const db = getCRMData();
-    setCustomers(db.customers);
+    setCustomers(db.customers || []);
   }, []);
+
+  // Reset ke halaman 1 setiap kali user mengetik pencarian atau mengubah filter
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedTier]);
 
   // Focus select element when dialog opens
   useEffect(() => {
@@ -57,6 +68,12 @@ const Membership = () => {
     const matchesTier = selectedTier === "All" || c.loyalty === selectedTier;
     return matchesSearch && matchesTier;
   });
+
+  // ─── LOGIKA PEMOTONGAN DATA (PAGINATION) ───────────────────────────
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage) || 1;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
 
   const openUpgradeDialog = (cust) => {
     setSelectedCustomer(cust);
@@ -106,8 +123,6 @@ const Membership = () => {
 
       {/* 1. MEMBERSHIP METRIC CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 mb-8">
-        
-        {/* Active Members Card */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl"><FaCheckCircle size={24} /></div>
           <div>
@@ -116,7 +131,6 @@ const Membership = () => {
           </div>
         </div>
 
-        {/* Gold Tier Card */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-amber-50 text-amber-500 rounded-2xl"><FaCrown size={24} /></div>
           <div>
@@ -125,7 +139,6 @@ const Membership = () => {
           </div>
         </div>
 
-        {/* Silver Tier Card */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-slate-100 text-slate-500 rounded-2xl"><FaMedal size={24} /></div>
           <div>
@@ -134,7 +147,6 @@ const Membership = () => {
           </div>
         </div>
 
-        {/* Bronze Tier Card */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-orange-50 text-orange-600 rounded-2xl"><FaAward size={24} /></div>
           <div>
@@ -142,7 +154,6 @@ const Membership = () => {
             <h3 className="text-2xl font-bold text-[#262626] mt-0.5">{bronzeCount} Members</h3>
           </div>
         </div>
-
       </div>
 
       {/* 2. SEARCH AND FILTER ROW */}
@@ -165,9 +176,9 @@ const Membership = () => {
             className="px-6 py-4 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#4F5C18]/20 cursor-pointer"
           >
             <option value="All">All Tiers</option>
-            <option value="Gold">Gold</option>
-            <option value="Silver">Silver</option>
-            <option value="Bronze">Bronze</option>
+            {LOYALTY_TIERS.map((tier) => (
+              <option key={tier.value} value={tier.value}>{tier.value}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -186,7 +197,8 @@ const Membership = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCustomers.slice(0, 15).map((item) => (
+            {/* Menggunakan data halaman aktif (currentItems), bukan filter utuh langsung */}
+            {currentItems.map((item) => (
               <TableRow key={item.id} className="hover:bg-[#F3F3F3]/30 border-[#F3F3F3] transition-all">
                 <TableCell className="p-5">
                   <span className="text-[10px] font-bold font-mono text-[#4F5C18] bg-[#4F5C18]/5 px-3 py-1 rounded-lg border border-[#4F5C18]/10">
@@ -197,7 +209,7 @@ const Membership = () => {
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10 border-2 border-[#4F5C18]/10">
                       <AvatarFallback className="bg-[#4F5C18] text-white text-xs font-bold">
-                        {item.name.charAt(0)}
+                        {item.name ? item.name.charAt(0) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -239,10 +251,32 @@ const Membership = () => {
             ))}
           </TableBody>
         </Table>
+
+        {/* ─── KONTROL NAVBAR PAGINATION BARU (DENGAN BUTTON PANAH) ─────────────────── */}
         <div className="p-6 border-t border-[#F3F3F3] flex justify-between items-center bg-[#F3F3F3]/20">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Showing top 15 matches of {filteredCustomers.length} total members
+            Showing page {currentPage} of {totalPages} ({filteredCustomers.length} total members)
           </p>
+          
+          <div className="flex gap-2">
+            {/* Tombol Back (<) */}
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="w-10 h-10 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl flex items-center justify-center hover:bg-[#4F5C18] hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-[#4F5C18] transition-all shadow-sm cursor-pointer"
+            >
+              <FaChevronLeft size={12} />
+            </button>
+            
+            {/* Tombol Next (>) */}
+            <button 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="w-10 h-10 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl flex items-center justify-center hover:bg-[#4F5C18] hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-[#4F5C18] transition-all shadow-sm cursor-pointer"
+            >
+              <FaChevronRight size={12} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -272,9 +306,9 @@ const Membership = () => {
                   value={formTier}
                   onChange={(e) => setFormTier(e.target.value)}
                 >
-                  <option value="Bronze">Bronze Level</option>
-                  <option value="Silver">Silver Level</option>
-                  <option value="Gold">Gold Level</option>
+                  {LOYALTY_TIERS.map((tier) => (
+                    <option key={tier.value} value={tier.value}>{tier.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -286,8 +320,9 @@ const Membership = () => {
                   value={formStatus}
                   onChange={(e) => setFormStatus(e.target.value)}
                 >
-                  <option value="Active">Active / Engaged</option>
-                  <option value="Inactive">Inactive / Suspended</option>
+                  {MEMBERSHIP_STATUSES.map((status) => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -310,7 +345,7 @@ const Membership = () => {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-[#4F5C18] text-white py-4.5 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4F5C18]/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4">
+              <button type="submit" className="w-full bg-[#4F5C18] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4F5C18]/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4">
                 <FaSave /> Save Membership Settings
               </button>
             </form>

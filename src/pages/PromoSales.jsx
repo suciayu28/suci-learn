@@ -13,6 +13,9 @@ import {
   FiClock
 } from "react-icons/fi"; 
 
+// --- IMPORT DATA YANG SUDAH DIPISAHKAN ---
+import { initialPromoProducts, defaultNewProductState } from "../data/promoData";
+
 const PromoSales = () => {
   // --- STATE FOR EVENT STATUS & TIMER ---
   const [isEventLive, setIsEventLive] = useState(true);
@@ -21,51 +24,13 @@ const PromoSales = () => {
   // --- STATE FOR MODAL FORM VISIBILITY ---
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // --- STATE FOR NEW PRODUCT FORM ---
-  const [newProduct, setNewProduct] = useState({
-    title: "",
-    originalPrice: "",
-    discountPrice: "",
-    img: ""
-  });
+  // --- STATE FOR NEW PRODUCT FORM (Menggunakan data default dari file data) ---
+  const [newProduct, setNewProduct] = useState(defaultNewProductState);
 
   const titleInputRef = useRef(null);
 
-  // --- MOCK DATA PRODUK ---
-  const [promoProducts, setPromoProducts] = useState([
-    {
-      id: 1,
-      title: "Lumière Velvet Lip Matte",
-      originalPrice: 180000,
-      discountPrice: 126000,
-      discountPercent: 30,
-      img: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=500&q=80"
-    },
-    {
-      id: 2,
-      title: "Flawless Cushion Foundation SPF 35",
-      originalPrice: 280000,
-      discountPrice: 201600,
-      discountPercent: 28,
-      img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=500&q=80"
-    },
-    {
-      id: 3,
-      title: "12-Color Luxury Eye Palette",
-      originalPrice: 450000,
-      discountPrice: 337500,
-      discountPercent: 25,
-      img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=500&q=80"
-    },
-    {
-      id: 4,
-      title: "Waterproof HD Liquid Eyeliner",
-      originalPrice: 150000,
-      discountPrice: 127500,
-      discountPercent: 15,
-      img: "https://images.unsplash.com/photo-1625093742435-6fa192b6fb10?auto=format&fit=crop&w=500&q=80"
-    }
-  ]);
+  // --- STATE DATA PRODUK (Mengambil initial data dari file data) ---
+  const [promoProducts, setPromoProducts] = useState(initialPromoProducts);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [discountFilter, setDiscountFilter] = useState("Semua Polongan Harga");
@@ -120,7 +85,7 @@ const PromoSales = () => {
     };
 
     setPromoProducts([createdProduct, ...promoProducts]);
-    setNewProduct({ title: "", originalPrice: "", discountPrice: "", img: "" });
+    setNewProduct(defaultNewProductState); // Reset form menggunakan default state
     setIsFormOpen(false);
   };
 
@@ -141,9 +106,8 @@ const PromoSales = () => {
   const formatIDR = (num) => "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   return (
-    // Perbaikan Jarak Layout Utama: px diganti agar pas di dalam frame konten dashboard Anda tanpa merusak padding kiri sidebar
+    // ... Sisa kode return JSX Anda ke bawah sama persis tidak ada yang berubah ...
     <div className="animate-in fade-in duration-500 pb-12 px-8 pt-6 font-poppins text-[#262626] w-full max-w-(screen-2xl) mx-auto">
-      
       {/* HEADER PORTAL */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -151,7 +115,6 @@ const PromoSales = () => {
           <h1 className="text-3xl font-playfair font-black text-[#262626]">Promo & Sales Curated Portal</h1>
         </div>
         
-        {/* Perbaikan Struktur Tombol Aksi Kanan */}
         <div className="flex items-center gap-3">
           <button 
             type="button"
@@ -395,7 +358,6 @@ const PromoSales = () => {
           <p className="text-xs text-gray-400 italic">Tidak ada produk promosi kosmetik yang cocok dengan kriteria filter.</p>
         </div>
       )}
-
     </div>
   );
 };

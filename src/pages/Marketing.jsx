@@ -8,24 +8,22 @@ import {
   FiTrendingUp, 
   FiDollarSign, 
   FiUsers, 
-  FiPercent,
   FiPlay,
   FiPause,
   FiCheckCircle
 } from "react-icons/fi";
 import { 
   ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip as ChartTooltip, 
-  Cell, 
   PieChart, 
   Pie, 
+  Cell,
+  Tooltip as ChartTooltip, 
   Legend 
 } from "recharts";
 import { getCRMData, saveCRMData } from "../lib/crmData";
+
+// Import data pilihan channel yang sudah dipisah menggunakan alias @/
+import { ACQUISITION_CHANNELS } from "@/data/marketingData.js";
 
 const Marketing = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -48,8 +46,8 @@ const Marketing = () => {
 
   useEffect(() => {
     const db = getCRMData();
-    setCampaigns(db.campaigns);
-    setCustomers(db.customers);
+    setCampaigns(db.campaigns || []);
+    setCustomers(db.customers || []);
   }, []);
 
   // Auto-focus campaign name when form dialog opens
@@ -145,7 +143,6 @@ const Marketing = () => {
 
       {/* 1. MARKETING METRICS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 mb-8">
-        
         {/* Total Spend */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl"><FiDollarSign size={24} /></div>
@@ -183,7 +180,6 @@ const Marketing = () => {
             </h3>
           </div>
         </div>
-
       </div>
 
       {/* 2. TABS */}
@@ -256,7 +252,6 @@ const Marketing = () => {
                   Change Campaign Status
                 </button>
               </div>
-
             </div>
           ))}
         </div>
@@ -264,7 +259,6 @@ const Marketing = () => {
 
       {activeTab === "acquisition" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
           {/* Visual Pie Chart */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
             <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Acquisition Source Split</h4>
@@ -304,14 +298,13 @@ const Marketing = () => {
                   <div className="text-right">
                     <span className="text-xs font-bold text-[#4F5C18]">{data.value} Customers</span>
                     <span className="text-[10px] text-gray-400 block font-medium">
-                      {((data.value / customers.length) * 100).toFixed(1)}% share
+                      {customers.length > 0 ? ((data.value / customers.length) * 100).toFixed(1) : 0}% share
                     </span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
       )}
 
@@ -339,6 +332,7 @@ const Marketing = () => {
                 />
               </div>
 
+              {/* Bersih dari Hardcode: Di-render via array map */}
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Acquisition Channel</label>
                 <select 
@@ -347,10 +341,11 @@ const Marketing = () => {
                   value={formData.source}
                   onChange={(e) => setFormData({...formData, source: e.target.value})}
                 >
-                  <option value="Instagram">Instagram Ads</option>
-                  <option value="TikTok">TikTok Campaign</option>
-                  <option value="Referral">Referral Program</option>
-                  <option value="Website">Website Promotion</option>
+                  {ACQUISITION_CHANNELS.map((channel) => (
+                    <option key={channel.value} value={channel.value}>
+                      {channel.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -397,7 +392,6 @@ const Marketing = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

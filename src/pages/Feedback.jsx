@@ -4,16 +4,17 @@ import {
   FiStar, 
   FiMessageSquare, 
   FiSearch, 
-  FiFilter, 
   FiCheckCircle, 
   FiAlertTriangle, 
   FiX, 
-  FiSave,
   FiSend,
   FiCornerDownRight
 } from "react-icons/fi";
 import { getCRMData, saveCRMData } from "../lib/crmData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+// Import data pilihan filter yang sudah dipisah (Menggunakan Alias @/ dan .js)
+import { SENTIMENT_OPTIONS, STATUS_OPTIONS } from "@/data/feedbackData.js";
 
 const Feedback = () => {
   const [reviews, setReviews] = useState([]);
@@ -31,7 +32,7 @@ const Feedback = () => {
 
   useEffect(() => {
     const db = getCRMData();
-    setReviews(db.reviews);
+    setReviews(db.reviews || []);
   }, []);
 
   // Auto-focus reply textarea when dialog opens
@@ -48,7 +49,6 @@ const Feedback = () => {
     : "0.0";
   const positiveCount = reviews.filter(r => r.sentiment === "Positive").length;
   const neutralCount = reviews.filter(r => r.sentiment === "Neutral").length;
-  const negativeCount = reviews.filter(r => r.sentiment === "Negative").length;
 
   // Filter
   const filteredReviews = reviews.filter(rev => {
@@ -116,7 +116,6 @@ const Feedback = () => {
 
       {/* 1. RATING AND SENTIMENT STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 mb-8">
-        
         {/* Rating Card */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm text-center md:text-left md:flex items-center gap-5">
           <div className="mx-auto md:mx-0 w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
@@ -154,12 +153,10 @@ const Feedback = () => {
             <h3 className="text-2xl font-bold text-rose-600 mt-0.5">{reviews.filter(r => r.status === "Spam").length} Reviews</h3>
           </div>
         </div>
-
       </div>
 
       {/* 2. FILTER & SEARCH CONTROLS */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        
         {/* Search */}
         <div className="relative flex-grow">
           <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-[#4F5C18]/40" />
@@ -172,28 +169,26 @@ const Feedback = () => {
           />
         </div>
 
-        {/* Sentiment Filter */}
+        {/* Sentiment Filter - Di-render lewat .map() */}
         <select 
           value={filterSentiment}
           onChange={(e) => setFilterSentiment(e.target.value)}
           className="px-6 py-4 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#4F5C18]/20 cursor-pointer"
         >
-          <option value="All">All Sentiment</option>
-          <option value="Positive">Positive Only</option>
-          <option value="Neutral">Neutral Only</option>
-          <option value="Negative">Negative Only</option>
+          {SENTIMENT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
 
-        {/* Approval Status Filter */}
+        {/* Approval Status Filter - Di-render lewat .map() */}
         <select 
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
           className="px-6 py-4 bg-white border border-[#F3F3F3] text-[#4F5C18] rounded-2xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-[#4F5C18]/20 cursor-pointer"
         >
-          <option value="All">All Statuses</option>
-          <option value="Approved">Approved</option>
-          <option value="Pending">Pending</option>
-          <option value="Spam">Spam</option>
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
       </div>
 
@@ -202,7 +197,6 @@ const Feedback = () => {
         {filteredReviews.length > 0 ? (
           filteredReviews.map((rev) => (
             <div key={rev.id} className="bg-white rounded-[2rem] p-8 border border-[#F3F3F3] shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
-              
               {/* Header profile & rating */}
               <div>
                 <div className="flex justify-between items-start mb-4">
@@ -253,7 +247,6 @@ const Feedback = () => {
 
               {/* Action buttons */}
               <div className="mt-8 pt-4 border-t border-[#F3F3F3] flex justify-between items-center">
-                
                 {/* Status Toggle badges */}
                 <div className="flex gap-1">
                   <button 
@@ -281,9 +274,7 @@ const Feedback = () => {
                 >
                   {rev.adminReply ? "Edit Response" : "Respond"}
                 </button>
-
               </div>
-
             </div>
           ))
         ) : (
@@ -330,7 +321,6 @@ const Feedback = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

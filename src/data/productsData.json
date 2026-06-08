@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "title": "Silk Foundation",
+    "price": "Rp 450.000",
+    "tag": "Tata Rias",
+    "img": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    "id": 2,
+    "title": "Hydrating Serum",
+    "price": "Rp 320.000",
+    "tag": "Perawatan Kulit",
+    "img": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    "id": 3,
+    "title": "Eau de Parfum Rose",
+    "price": "Rp 850.000",
+    "tag": "Parfum",
+    "img": "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600"
+  },
+  {
+    "id": 4,
+    "title": "Face Contour Brush",
+    "price": "Rp 175.000",
+    "tag": "Alat Kecantikan",
+    "img": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=600"
+  }
+]

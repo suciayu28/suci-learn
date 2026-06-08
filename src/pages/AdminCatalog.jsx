@@ -7,12 +7,12 @@ import {
   FiSave, 
   FiX, 
   FiSearch,
-  FiTag,
   FiDollarSign,
-  FiLink,
-  FiCheckCircle
+  FiLink
 } from "react-icons/fi";
 import { getCRMData, saveCRMData } from "../lib/crmData";
+// 1. IMPORT DATA PRODUK YANG SUDAH DIPISAHKAN
+import defaultProducts from "../data/productsData.json"; 
 
 const AdminCatalog = () => {
   const [products, setProducts] = useState([]);
@@ -32,10 +32,19 @@ const AdminCatalog = () => {
   // Focus Refs
   const titleInputRef = useRef(null);
 
-  // Fetch products on load
+  // 2. LOGIKA FETCH DATA DENGAN FALLBACK DATA TERPISAH
   useEffect(() => {
     const db = getCRMData();
-    setProducts(db.products || []);
+    
+    // Jika data di database CRM kosong atau belum punya properti products,
+    // gunakan data dari file JSON yang sudah kita pisahkan tadi.
+    if (!db.products || db.products.length === 0) {
+      setProducts(defaultProducts);
+      db.products = defaultProducts;
+      saveCRMData(db);
+    } else {
+      setProducts(db.products);
+    }
   }, []);
 
   // Auto-focus first form input when Dialog modal opens
@@ -119,7 +128,7 @@ const AdminCatalog = () => {
 
     setProducts(updatedProducts);
 
-    // Save to localStorage
+    // Save to localStorage DB
     const db = getCRMData();
     db.products = updatedProducts;
     saveCRMData(db);
@@ -161,7 +170,7 @@ const AdminCatalog = () => {
         </button>
       </PageHeader>
 
-      {/* 1. FILTER AND SEARCH SECTION */}
+      {/* FILTER AND SEARCH SECTION */}
       <div className="flex flex-col md:flex-row gap-4 mt-6 mb-8">
         <div className="relative flex-grow">
           <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-[#4F5C18]/40" />
@@ -185,7 +194,7 @@ const AdminCatalog = () => {
         </select>
       </div>
 
-      {/* 2. CATALOG PRODUCT GRID */}
+      {/* CATALOG PRODUCT GRID */}
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {filteredProducts.map((product) => (
@@ -247,7 +256,7 @@ const AdminCatalog = () => {
         </div>
       )}
 
-      {/* 3. ADD / EDIT DIALOG MODAL */}
+      {/* ADD / EDIT DIALOG MODAL */}
       {isDialogOpen && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 duration-300">
@@ -268,16 +277,14 @@ const AdminCatalog = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">
                   Product Name / Title
                 </label>
-                <div className="relative">
-                  <input 
-                    ref={titleInputRef}
-                    required
-                    className="w-full px-5 py-3.5 bg-[#F3F3F3] rounded-2xl border-none outline-none text-sm focus:ring-2 focus:ring-[#4F5C18]/20"
-                    placeholder="e.g. Silk Foundation"
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  />
-                </div>
+                <input 
+                  ref={titleInputRef}
+                  required
+                  className="w-full px-5 py-3.5 bg-[#F3F3F3] rounded-2xl border-none outline-none text-sm focus:ring-2 focus:ring-[#4F5C18]/20"
+                  placeholder="e.g. Silk Foundation"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                />
               </div>
 
               <div>
