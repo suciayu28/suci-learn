@@ -9,7 +9,8 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineMegaphone,
   HiOutlineTag,
-  HiOutlineReceiptPercent // Ditambahkan untuk ikon Promo & Sales
+  HiOutlineReceiptPercent,
+  HiOutlineUserGroup // Ditambahkan untuk ikon Manage Users
 } from "react-icons/hi2";
 
 const Sidebar = () => {
@@ -58,6 +59,15 @@ const Sidebar = () => {
           <span className="text-[10px] uppercase tracking-widest">Membership</span>
         </NavLink>
 
+        {/* --- MENU BARU: MANAGE USERS --- */}
+        <NavLink 
+          to="/admin/notes" 
+          className={({ isActive }) => `${baseStyle} ${isActive ? activeStyle : ""}`}
+        >
+          <HiOutlineUserGroup size={20} className="shrink-0" />
+          <span className="text-[10px] uppercase tracking-widest">Manage Users</span>
+        </NavLink>
+
         <NavLink 
           to="/admin/orders" 
           className={({ isActive }) => `${baseStyle} ${isActive ? activeStyle : ""}`}
@@ -82,7 +92,7 @@ const Sidebar = () => {
           <span className="text-[10px] uppercase tracking-widest">Marketing</span>
         </NavLink>
 
-        {/* --- MENU BARU: PROMO & SALES --- */}
+        {/* --- MENU: PROMO & SALES --- */}
         <NavLink 
           to="/admin/promo" 
           className={({ isActive }) => `${baseStyle} ${isActive ? activeStyle : ""}`}

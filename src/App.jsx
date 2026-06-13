@@ -23,6 +23,9 @@ const Marketing = React.lazy(() => import("./pages/Marketing"));
 const AdminCatalog = React.lazy(() => import("./pages/AdminCatalog"));
 const PromoSales = React.lazy(() => import("./pages/PromoSales")); // 1. LAZY IMPORT UNTUK PROMO & SALES
 
+// Lazy Import untuk Halaman ManageUsers Baru
+const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
+
 // Auth Pages
 const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
@@ -77,6 +80,9 @@ function App() {
           {/* Catalog Management */}
           <Route path="catalog" element={<AdminCatalog />} />
 
+          {/* Rute Navigasi Menu Notes untuk ManageUsers */}
+          <Route path="notes" element={<ManageUsers />} />
+
           {/* Fallback 404 (Di dalam MainLayout) */}
           <Route
             path="*"
@@ -91,12 +97,11 @@ function App() {
           />
         </Route>
 
-        {/* 3. AUTH AREA: Menggunakan AuthLayout */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot" element={<Forgot />} />
-        </Route>
+        {/* 3. CORE AUTHENTICATION AREA (FULL SPLIT SCREEN) */}
+        {/* Mengeluarkan halaman auth ke tingkat atas bebas agar simetris penuh monitor */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot" element={<Forgot />} />
 
       </Routes>
     </Suspense>

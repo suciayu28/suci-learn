@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useEffect, useRef } from "react"; // 1. Ditambahkan useEffect dan useRef di sini
-import { useNavigate } from "react-router-dom"; // Import navigasi
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiStar, FiPercent, FiBox, FiArrowRight,
   FiHeart, FiTag, FiSend, FiShoppingBag, FiChevronUp, FiX, FiClock,
   FiUser, FiGrid, FiHome, FiSettings, FiLogOut, FiMapPin, FiGift, FiShield,
-  FiTruck, FiCheckCircle, FiChevronRight, FiPackage
+  FiTruck, FiCheckCircle, FiChevronRight, FiPackage, FiHelpCircle, FiCreditCard, FiRefreshCw, FiPhone, FiMail
 } from "react-icons/fi";
 
-// IMPORT KOMPONEN
+// IMPORT KOMPONEN ASLI
 import LumiereButton from "../components/basic/LumiereButton";
 import LumiereBadge from "../components/basic/LumiereBadge";
 import LumiereAvatar from "../components/basic/LumiereAvatar";
@@ -16,13 +16,13 @@ import LumiereInput from "../components/form/LumiereInput";
 import AtelierProductCard from "../components/data-display/AtelierProductCard";
 import HeroBanner from "../components/section/HeroBanner";
 import ContentSection from "../components/section/ContentSection";
-import Footer from "../components/layout/Footer";
+import Footer from "../components/layout/Footer"; 
 import { getCRMData } from "../lib/crmData";
 
 const LumiereShowcase = () => {
-  const navigate = useNavigate(); // Inisialisasi navigasi
+  const navigate = useNavigate();
   
-  // --- STATE ---
+  // --- STATE ASLI ---
   const [products, setProducts] = useState([]);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -31,10 +31,35 @@ const LumiereShowcase = () => {
   const [cartItems, setCartItems] = useState([]);
   const [alertMsg, setAlertMsg] = useState("");
   const [isBagOpen, setIsBagOpen] = useState(false);
-
-  // BARU: State untuk mengontrol Modal Riwayat & Detail Lacak Pesanan
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null); // Menampung data pesanan yang sedang dilacak
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  // State navigasi internal dashboard
+  const [currentDashboardTab, setCurrentDashboardTab] = useState("katalog"); 
+
+  // --- REFS UNTUK AUTO-SCROLL INTERAKTIF ---
+  const homeRef = useRef(null);
+  const katalogRef = useRef(null);
+  const lacakRef = useRef(null);
+  const footerRef = useRef(null);
+  const emailInputRef = useRef(null);
+
+  // Fungsi handler untuk smooth scroll antar bagian halaman dashboard
+  const handleScrollToSection = (elementRef, tabName = null) => {
+    if (tabName) {
+      setCurrentDashboardTab(tabName);
+      if (tabName === "pesanan") {
+        setIsHistoryOpen(true);
+        setSelectedOrder(null);
+      } else {
+        setIsHistoryOpen(false);
+      }
+    }
+    
+    setTimeout(() => {
+      elementRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
   // Mock Data Riwayat Transaksi Guest
   const orderHistoryData = [
@@ -42,27 +67,20 @@ const LumiereShowcase = () => {
     { id: "LM-77312544A", date: "28 Mei 2026", total: "Rp 680.000", items: "1 Item (Atelier Fragrance)", status: "Selesai", step: 4 }
   ];
 
-  // 2. Inisialisasi useRef untuk menangkap elemen DOM input email newsletter
-  const emailInputRef = useRef(null);
-
-  // 3. Implementasi useEffect untuk merespon interaksi setelah user klik subscribe
   useEffect(() => {
     if (subscribed && emailInputRef.current) {
-      emailInputRef.current.blur(); // Melepas fokus kursor dari input setelah berhasil submit
-      setEmail(""); // Mengosongkan form input email
+      emailInputRef.current.blur();
+      setEmail("");
     }
-  }, [subscribed]); // Berjalan setiap kali nilai state 'subscribed' berubah
+  }, [subscribed]);
 
-  // Load products from localStorage mock db
   useEffect(() => {
     const db = getCRMData();
     setProducts(db.products || []);
   }, []);
 
-  // --- DATA PRODUK ---
   const categories = ["Semua", "Perawatan Kulit", "Tata Rias", "Parfum", "Alat Kecantikan"];
 
-  // --- LOGIC ---
   const filteredProducts = useMemo(() => {
     let result = products;
     if (activeCategory !== "Semua") result = products.filter(p => p.tag === activeCategory);
@@ -75,441 +93,333 @@ const LumiereShowcase = () => {
     setTimeout(() => setAlertMsg(""), 3000);
   };
 
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    setSubscribed(true);
-    setTimeout(() => setSubscribed(false), 4000);
-  };
-
   return (
-    <div className="bg-[#FAF9F7] min-h-screen font-poppins text-[#262626] overflow-x-hidden selection:bg-[#4F5C18] selection:text-white pt-28">
+    <div ref={homeRef} className="bg-[#F5F5F2] min-h-screen font-sans text-slate-800 antialiased pt-24 w-full overflow-x-hidden">
       
-      {/* NEW TOP HEADER NAVBAR (GUEST DASHBOARD STYLE) */}
-      <header className="w-full bg-white/95 backdrop-blur-2xl border-b border-gray-100/80 py-5 px-12 flex justify-between items-center fixed top-0 left-0 right-0 z-[90] shadow-[0_2px_20px_-5px_rgba(0,0,0,0.03)]">
-        {/* Left Side: Brand Logo */}
+      {/* ================= HEADER / TOPBAR NAVIGATION ================= */}
+      <nav className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/40 px-6 md:px-12 flex justify-between items-center z-50 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#4F5C18] text-white flex items-center justify-center font-serif italic font-black text-xl shadow-md shadow-[#4F5C18]/20 transition-transform hover:scale-105 duration-200">
-            L.
+          <div className="w-9 h-9 bg-[#4F5C18] text-white flex items-center justify-center font-serif italic font-bold text-lg rounded-xl shadow-sm">
+            L
           </div>
-          <div className="flex flex-col">
-            <span className="font-serif font-black text-xl tracking-tight text-black leading-none">Lumière</span>
-            <span className="text-[10px] text-gray-400 font-bold tracking-[0.15em] uppercase mt-1">Guest Dashboard</span>
+          <div className="text-left">
+            <h1 className="text-sm font-bold tracking-tight text-slate-900 uppercase">Lumière Atelier</h1>
+            <span className="text-[9px] text-slate-400 font-bold tracking-widest uppercase block mt-0.5">Customer Workspace</span>
           </div>
         </div>
-        
-        {/* Middle Side: Dashboard Navigation Links */}
-        <nav className="hidden md:flex items-center gap-10">
-          <button className="flex items-center gap-2.5 text-[12px] font-black uppercase tracking-wider text-[#4F5C18] relative after:absolute after:bottom-[-22px] after:left-0 after:right-0 after:h-[3px] after:bg-[#4F5C18] after:rounded-full">
-            <FiHome size={15} /> Katalog Utama
+
+        {/* Menu Navigasi Tengah */}
+        <div className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <button 
+            onClick={() => handleScrollToSection(homeRef, "katalog")} 
+            className={`hover:text-[#4F5C18] transition-colors cursor-pointer bg-transparent border-none p-0 font-bold uppercase tracking-wider ${currentDashboardTab === 'katalog' ? 'text-[#4F5C18]' : 'text-slate-500'}`}
+          >
+            Katalog Produk
           </button>
           <button 
-            onClick={() => {
-              setIsHistoryOpen(true);
-              setSelectedOrder(null); // Reset ke list riwayat awal
-              setIsBagOpen(false);
-            }} 
-            className="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-wider text-gray-400 hover:text-[#4F5C18] transition-colors relative group py-1"
+            onClick={() => handleScrollToSection(lacakRef, "pesanan")} 
+            className={`hover:text-[#4F5C18] transition-colors cursor-pointer bg-transparent border-none p-0 font-bold uppercase tracking-wider ${currentDashboardTab === 'pesanan' ? 'text-[#4F5C18]' : 'text-slate-500'}`}
           >
-            <FiClock size={15} /> Riwayat Belanja
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#4F5C18] transition-all duration-300 group-hover:w-full"></span>
+            Lacak Paket
           </button>
-        </nav>
-
-        {/* Right Side: Profile & Admin Action */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3.5 border-r border-gray-100 pr-5">
-            <div className="w-11 h-11 rounded-full bg-[#4F5C18]/10 text-[#4F5C18] flex items-center justify-center font-bold">
-              <FiUser size={18} />
-            </div>
-            <div className="hidden sm:flex flex-col text-left">
-              <span className="text-[13px] font-bold text-gray-800 leading-tight">Guest User</span>
-              <span className="text-[10px] text-gray-400 font-semibold tracking-wide mt-0.5">Standard Access</span>
-            </div>
-          </div>
-
           <button 
-            onClick={() => navigate("/login")}
-            className="px-6 py-3 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-[#4F5C18] active:scale-98 transition-all flex items-center gap-2.5 shadow-md shadow-black/5 cursor-pointer"
+            onClick={() => handleScrollToSection(footerRef)} 
+            className="hover:text-[#4F5C18] transition-colors cursor-pointer bg-transparent border-none p-0 font-bold uppercase tracking-wider text-slate-500"
           >
-            <FiLogOut size={13} /> Admin Panel
+            Kontak Kami
           </button>
         </div>
-      </header>
-      
-      {/* FLOATING BAG & NAVIGATION */}
-      <div className="fixed top-28 right-8 z-[100] flex flex-col items-end gap-3">
-        <div 
-          onClick={() => setIsBagOpen(!isBagOpen)}
-          className="bg-white/95 backdrop-blur-md p-4.5 px-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center gap-4 transition-all hover:scale-105 hover:border-[#4F5C18]/20 cursor-pointer group"
-        >
-          <div className="relative">
-            <FiShoppingBag size={24} className="text-[#4F5C18] transition-transform group-hover:rotate-6" />
+
+        {/* Akses Cepat Keranjang & Admin */}
+        <div className="flex items-center gap-3">
+          <div 
+            onClick={() => setIsBagOpen(!isBagOpen)}
+            className="relative px-4 py-2 bg-white border border-slate-200/80 rounded-xl cursor-pointer hover:border-slate-400 flex items-center gap-2 group"
+          >
+            <FiShoppingBag size={14} className="text-slate-700" />
+            <span className="text-[11px] font-bold text-slate-700 hidden sm:inline">Bag ({cartItems.length})</span>
             {cartItems.length > 0 && (
-              <span className="absolute -top-2.5 -right-2.5 bg-rose-500 text-white text-[10px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-rose-500 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
                 {cartItems.length}
               </span>
             )}
           </div>
-          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-[#4F5C18]">My Atelier Bag</span>
+
+          <button 
+            onClick={() => navigate("/login")}
+            className="px-4 py-2 bg-slate-950 text-white text-[10px] font-bold tracking-widest uppercase rounded-xl hover:bg-[#4F5C18] transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <FiLogOut size={12} /> Admin
+          </button>
         </div>
+      </nav>
 
-        {/* Dropdown Menu */}
-        {isBagOpen && (
-          <div className="w-96 bg-white rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-gray-100 p-8 animate-in fade-in slide-in-from-top-5 duration-300">
-            <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-              <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-400">Keranjang Belanja</h4>
-              <button className="p-1.5 rounded-full hover:bg-gray-50 transition-colors">
-                <FiX className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors" size={16} onClick={() => setIsBagOpen(false)} />
-              </button>
-            </div>
-            
-            <div className="max-h-72 overflow-y-auto space-y-4 pr-2 mb-6 custom-scrollbar">
-              {cartItems.length > 0 ? cartItems.map((item) => (
-                <div key={item.cartId} className="flex items-center gap-4 p-2 rounded-xl hover:bg-gray-50 transition-all group">
-                  <img src={item.img} alt={item.title} className="w-16 h-16 rounded-xl object-cover shadow-xs border border-gray-100" />
-                  <div className="flex-grow">
-                    <p className="text-[13px] font-bold text-[#262626] line-clamp-1">{item.title}</p>
-                    <p className="text-[11px] text-[#4F5C18] font-semibold mt-0.5">{item.price}</p>
-                  </div>
-                  <button onClick={() => setCartItems(prev => prev.filter(i => i.cartId !== item.cartId))} className="text-gray-300 hover:text-red-500 p-2 rounded-lg hover:bg-red-50/50 transition-all">
-                    <FiX size={16} />
-                  </button>
-                </div>
-              )) : (
-                <div className="text-center py-10">
-                  <FiShoppingBag size={32} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-[11px] text-gray-400 font-medium italic">Belum ada pilihan keindahan.</p>
-                </div>
-              )}
-            </div>
-
-            {/* ACTION BUTTONS */}
-            <div className="space-y-3 pt-4 border-t border-gray-100">
+      {/* ================= DASHBOARD MAIN WRAPPER ================= */}
+      {/* DINAMIS GRID: Jika tab katalog aktif, gunakan lebar penuh grid-cols-1 tanpa membagi space untuk sidebar */}
+      <div className={`w-full px-6 md:px-12 py-6 grid gap-8 items-start ${
+        currentDashboardTab === "katalog" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
+      }`}>
+        
+        {/* SIDEBAR LEFT PANEL - Hanya muncul jika tab BUKAN katalog */}
+        {currentDashboardTab !== "katalog" && (
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-28 text-left w-full">
+            <div className="bg-white border border-slate-200/60 p-2 rounded-2xl shadow-2xs">
               <button 
-                onClick={() => {
-                  setIsHistoryOpen(true);
-                  setSelectedOrder(null);
-                  setIsBagOpen(false);
-                }}
-                className="w-full py-4 bg-[#4F5C18] text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#3a4412] active:scale-99 transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#4F5C18]/10"
+                onClick={() => { setCurrentDashboardTab("katalog"); setIsHistoryOpen(false); }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                  currentDashboardTab === 'katalog' ? 'bg-[#4F5C18] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                }`}
               >
-                <FiClock size={14} /> Riwayat Pesanan
+                <span className="flex items-center gap-3"><FiGrid size={13} /> Belanja Katalog</span>
+                <FiChevronRight size={12} />
               </button>
+              
               <button 
-                onClick={() => navigate("/login")}
-                className="w-full py-3.5 bg-white border border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-gray-50 hover:text-gray-800 transition-all cursor-pointer"
+                onClick={() => { setCurrentDashboardTab("pesanan"); setIsHistoryOpen(true); setSelectedOrder(null); }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 mt-1 cursor-pointer ${
+                  currentDashboardTab === 'pesanan' ? 'bg-[#4F5C18] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                }`}
               >
-                Admin Panel Login
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* --- MODAL DIALOG RIWAYAT BELANJA & LACAK PESANAN (BARU & INTERAKTIF) --- */}
-      {isHistoryOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-3xl border border-gray-100 p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-            
-            {/* Dekorasi Ambient Accent */}
-            <div className="absolute top-0 right-0 w-36 h-36 bg-[#4F5C18]/5 rounded-bl-full pointer-events-none"></div>
-            
-            {/* Header Modal */}
-            <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#4F5C18] bg-[#4F5C18]/10 px-3 py-1 rounded-full">
-                  {selectedOrder ? "Pelacakan Real-time" : "Daftar Pembelian"}
+                <span className="flex items-center gap-3"><FiTruck size={13} /> Lacak Pengiriman</span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${currentDashboardTab === 'pesanan' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {orderHistoryData.length}
                 </span>
-                <h3 className="text-2xl font-serif font-black tracking-tight mt-2 text-gray-900">
-                  {selectedOrder ? "Detail Pelacakan Kurir" : "Riwayat Belanja Anda"}
-                </h3>
-              </div>
-              <button 
-                onClick={() => setIsHistoryOpen(false)}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700"
-              >
-                <FiX size={18} />
               </button>
             </div>
 
-            {/* TAMPILAN 1: LIST RIWAYAT PESANAN */}
-            {!selectedOrder ? (
-              <div className="space-y-4 max-h-[26rem] overflow-y-auto pr-1 custom-scrollbar">
-                {orderHistoryData.map((order) => (
-                  <div key={order.id} className="bg-gray-50/70 border border-gray-100 p-5 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-gray-200 transition-all">
-                    <div className="space-y-1 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-mono font-bold text-gray-800">{order.id}</span>
-                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${order.step === 4 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <p className="text-[13px] font-bold text-gray-900">{order.items}</p>
-                      <p className="text-[11px] text-gray-400 font-medium">{order.date} • Total: <span className="text-[#4F5C18] font-semibold">{order.total}</span></p>
+            <div className="bg-white border border-slate-200/60 p-5 rounded-2xl shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-100 font-bold text-md shadow-inner">
+                  <FiUser size={16} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">Sesi Pembeli Tamu</h3>
+                  <span className="text-[9px] text-[#4F5C18] font-extrabold tracking-wider uppercase mt-1 inline-block bg-[#4F5C18]/10 px-2 py-0.5 rounded-md">
+                    Active Guest
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed">
+                ID Sesi Anda disimpan di lokal browser ini untuk kenyamanan pelacakan instan tanpa registrasi.
+              </div>
+            </div>
+          </aside>
+        )}
+
+        {/* MAIN PANEL CONTAINER */}
+        {/* DINAMIS COL-SPAN: Mengambil seluruh kolom jika tab katalog aktif */}
+        <main className={`space-y-6 w-full ${currentDashboardTab === "katalog" ? "col-span-1" : "lg:col-span-9"}`}>
+          
+          {/* TAB 1: VIEW KATALOG UTAMA (SEKARANG FULL WIDTH) */}
+          {currentDashboardTab === "katalog" && (
+            <div className="space-y-6 animate-in fade-in duration-300 w-full">
+              <div className="bg-white border border-slate-200/50 p-6 md:p-10 rounded-3xl text-left shadow-2xs relative overflow-hidden w-full">
+                <HeroBanner
+                  title="Keindahan Autentik Tanpa Batas"
+                  description="Jelajahi koleksi mahakarya produk kecantikan dengan standar lab premium dari bahan organik pilihan."
+                />
+              </div>
+
+              {/* Kategori Filter Tab */}
+              <div ref={katalogRef} className="scroll-mt-24 bg-white border border-slate-200/60 p-2 rounded-2xl flex flex-wrap gap-1 shadow-2xs w-full">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => { setActiveCategory(cat); setShowAll(false); }}
+                    className={`px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                      activeCategory === cat ? 'bg-slate-950 text-white shadow-sm' : 'bg-transparent text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Grid Produk - Diubah menjadi 3 Kolom di layar besar karena sudah full width */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                {filteredProducts.map((item) => (
+                  <div key={item.id} className="bg-white border border-slate-200/40 p-4 rounded-2xl flex flex-col justify-between hover:shadow-md transition-all text-left relative">
+                    <div className="absolute top-6 left-6 z-10 bg-white/95 text-[8px] font-bold text-slate-600 uppercase tracking-widest px-2.5 py-1 rounded-md border border-slate-100">
+                      {item.tag}
                     </div>
-                    {/* BUTTON LACAK PESANAN */}
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="px-5 py-3 bg-[#4F5C18] text-white text-[11px] font-black uppercase tracking-wider rounded-xl hover:bg-[#3b4513] transition-all flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer shadow-sm"
+                    <div className="rounded-xl overflow-hidden bg-slate-50/50 w-full">
+                      <AtelierProductCard {...item} />
+                    </div>
+                    <button 
+                      onClick={() => handleAddToBag(item)}
+                      className="w-full mt-4 bg-slate-50 hover:bg-[#4F5C18] text-slate-800 hover:text-white text-[10px] font-bold tracking-widest uppercase py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-200/60 shadow-2xs cursor-pointer"
                     >
-                      <FiTruck size={14} /> Lacak Pesanan <FiChevronRight size={12}/>
+                      <FiShoppingBag size={12} /> Add to Workspace Bag
                     </button>
                   </div>
                 ))}
               </div>
-            ) : (
-              /* TAMPILAN 2: DETAIL PROSES LACAK SETELAH KLIK */
-              <div className="animate-in slide-in-from-right-5 duration-300">
-                {/* Tombol Kembali ke List Riwayat */}
-                <button 
-                  onClick={() => setSelectedOrder(null)}
-                  className="mb-4 text-[11px] font-bold text-gray-400 hover:text-[#4F5C18] flex items-center gap-1.5 transition-colors cursor-pointer"
+
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="px-10 py-3 bg-white border border-slate-200 text-slate-700 text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-2xs cursor-pointer hover:bg-slate-50"
                 >
-                  ← Kembali ke Riwayat Belanja
-                </button>
-
-                {/* Ringkasan Resi */}
-                <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl flex justify-between items-center mb-6 text-left">
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">No. Resi Digital</p>
-                    <p className="text-[13px] font-mono font-black text-gray-800">{selectedOrder.id}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Status</p>
-                    <p className="text-[12px] font-black text-[#4F5C18]">{selectedOrder.status}</p>
-                  </div>
-                </div>
-
-                {/* Progress Bar Visual Linimasa */}
-                <div className="border border-gray-100 rounded-3xl p-6 mb-6 bg-white shadow-2xs">
-                  <div className="relative flex justify-between items-center w-full">
-                    <div className="absolute left-4 right-4 top-5 h-1 bg-gray-200 -z-10"></div>
-                    <div 
-                      className="absolute left-4 top-5 h-1 bg-[#4F5C18] -z-10 transition-all duration-500"
-                      style={{ width: `${((selectedOrder.step - 1) / 3) * 100}%` }}
-                    ></div>
-
-                    {/* Node 1 */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selectedOrder.step >= 1 ? 'bg-[#4F5C18] text-white shadow-md' : 'bg-gray-200 text-gray-400'}`}>
-                        {selectedOrder.step > 1 ? <FiCheckCircle size={16} /> : "01"}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider mt-2">Diterima</span>
-                    </div>
-
-                    {/* Node 2 */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selectedOrder.step >= 2 ? 'bg-[#4F5C18] text-white shadow-md' : 'bg-gray-200 text-gray-400'}`}>
-                        {selectedOrder.step > 2 ? <FiCheckCircle size={16} /> : "02"}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider mt-2">Dikemas</span>
-                    </div>
-
-                    {/* Node 3 */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selectedOrder.step >= 3 ? 'bg-[#4F5C18] text-white shadow-md' : 'bg-gray-200 text-gray-400'} ${selectedOrder.step === 3 && 'animate-pulse'}`}>
-                        {selectedOrder.step > 3 ? <FiCheckCircle size={16} /> : <FiTruck size={16} />}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider mt-2">Dikirim</span>
-                    </div>
-
-                    {/* Node 4 */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selectedOrder.step >= 4 ? 'bg-[#4F5C18] text-white shadow-md' : 'bg-gray-200 text-gray-400'}`}>
-                        {selectedOrder.step === 4 ? <FiCheckCircle size={16} /> : "04"}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider mt-2">Selesai</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Log Perjalanan Paket Tergantung Step */}
-                <div className="space-y-4 max-h-40 overflow-y-auto pr-1 custom-scrollbar text-left border-l border-gray-100 pl-2">
-                  {selectedOrder.step === 3 ? (
-                    <>
-                      <div className="flex gap-4 border-l-2 border-[#4F5C18] pl-4 relative">
-                        <div className="absolute w-2 h-2 rounded-full bg-[#4F5C18] -left-[5px] top-1.5"></div>
-                        <div>
-                          <p className="text-[12px] font-bold text-gray-800">Kurir sedang menuju ke lokasi rumah Anda</p>
-                          <p className="text-[10px] text-gray-400 font-medium mt-0.5">Hari ini — Paket dibawa oleh kurir partner Lumiere Express Hub Selatan.</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 border-l-2 border-gray-200 pl-4 relative">
-                        <div className="absolute w-2 h-2 rounded-full bg-gray-300 -left-[5px] top-1.5"></div>
-                        <div>
-                          <p className="text-[12px] font-medium text-gray-600">Pesanan lolos Quality Control & diserahkan ke Ekspedisi</p>
-                          <p className="text-[10px] text-gray-400 font-medium mt-0.5">{selectedOrder.date}</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex gap-4 border-l-2 border-emerald-500 pl-4 relative">
-                      <div className="absolute w-2 h-2 rounded-full bg-emerald-500 -left-[5px] top-1.5"></div>
-                      <div>
-                        <p className="text-[12px] font-bold text-gray-800">Paket Diterima dengan Selamat</p>
-                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">Diterima langsung oleh Penghuni Rumah / Pembeli.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Footer Modal */}
-            <div className="mt-8 pt-4 border-t border-gray-100 flex justify-end">
-              <button 
-                onClick={() => setIsHistoryOpen(false)}
-                className="px-6 py-3 bg-gray-900 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all"
-              >
-                Tutup Jendela
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ALERT TOAST */}
-      {alertMsg && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-bottom-10 duration-500">
-          <div className="bg-[#262626] text-white px-12 py-5 rounded-full shadow-3xl text-[11px] font-black uppercase tracking-[0.25em] border border-[#4F5C18]/30 flex items-center gap-3.5">
-             <FiHeart className="text-[#4F5C18] fill-[#4F5C18]" size={14} /> {alertMsg}
-          </div>
-        </div>
-      )}
-
-      {/* --- HERO WITH MODERNISED BACKGROUND --- */}
-      <section className="relative pt-8 pb-16 px-8 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-br from-white via-white to-[#EBF2E7] rounded-[2.5rem] p-6 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)] border border-white">
-          <HeroBanner
-            title="Seni Memancarkan Pesona"
-            description="Eksplorasi koleksi kosmetik premium Lumière yang dirancang di Atelier kami dengan presisi tinggi."
-          />
-          <div className="mt-12 mb-4 flex justify-center items-center gap-8 flex-wrap">
-            <div className="bg-white border border-[#4F5C18]/15 px-10 py-4 rounded-2xl flex items-center gap-3.5 shadow-xs transition-all hover:shadow-sm">
-              <div className="w-8 h-8 rounded-lg bg-[#4F5C18]/10 flex items-center justify-center text-[#4F5C18]">
-                <FiPercent size={15} />
-              </div>
-              <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#4F5C18]">PROMO GUEST: LUMIERE30 — DISKON 30%</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- CONTENT --- */}
-      <div className="max-w-7xl mx-auto px-8 space-y-28 pb-24">
-        
-        {/* NEW DASHBOARD TAB STYLE CATEGORIES */}
-        <section className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
-          <div className="flex flex-col sm:flex-row justify-between items-center px-4 mb-4 gap-3">
-            <div className="text-left w-full sm:w-auto">
-              <h3 className="text-[13px] font-black uppercase tracking-widest text-gray-400">Kategori Eksklusif</h3>
-              <p className="text-[12px] text-gray-500 font-medium mt-0.5">Pilih esensi kecantikan personal Anda</p>
-            </div>
-            <span className="px-4 py-1.5 rounded-full bg-[#4F5C18]/10 text-[#4F5C18] text-[10px] font-black uppercase tracking-widest self-start sm:self-auto">
-              {activeCategory} Selected
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2.5 p-1.5 bg-gray-50 rounded-2xl">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => { setActiveCategory(cat); setShowAll(false); }}
-                className={`flex-grow sm:flex-grow-0 px-8 py-4 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
-                  activeCategory === cat 
-                    ? "bg-[#4F5C18] text-white shadow-lg shadow-[#4F5C18]/10 scale-102" 
-                    : "text-gray-500 hover:bg-white hover:text-[#4F5C18] hover:shadow-2xs"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* PRODUCTS SECTION WITH HOVER INTERACTION CARDS */}
-        <ContentSection title="Esensi Ikonik" subtitle="The Atelier Collection">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
-            {filteredProducts.map((item) => (
-              <div key={item.id} className="relative group bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col justify-between">
-                <div className="overflow-hidden rounded-2xl relative mb-3">
-                  <AtelierProductCard {...item} />
-                </div>
-                <button 
-                  onClick={() => handleAddToBag(item)}
-                  className="w-full mt-4 bg-[#4F5C18] text-white py-3.5 px-4 rounded-xl opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2.5 text-[11px] font-black uppercase tracking-widest shadow-md shadow-[#4F5C18]/10 hover:bg-[#3d4713]"
-                >
-                  <FiShoppingBag size={15} /> Add to Bag
+                  {showAll ? "Tampilkan Sedikit Koleksi" : "Buka Seluruh Koleksi Atelier"}
                 </button>
               </div>
-            ))}
-          </div>
-          <div className="mt-20 text-center">
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="px-16 py-4.5 bg-white border border-gray-200 text-[#4F5C18] text-[11px] font-black tracking-[0.25em] uppercase rounded-xl hover:bg-[#4F5C18] hover:text-white transition-all shadow-2xs hover:shadow-md"
-            >
-              {showAll ? "Tutup Koleksi" : "Lihat Seluruh Koleksi"}
-            </button>
-          </div>
-        </ContentSection>
+            </div>
+          )}
 
-        {/* CUSTOMIZED MODERN CALL TO ACTION BANNER */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3 bg-white p-14 sm:p-20 rounded-[2.5rem] border border-gray-100 shadow-2xs flex flex-col justify-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-44 h-44 bg-[#4F5C18]/4 rounded-bl-full pointer-events-none"></div>
-            <span className="text-[10px] font-black tracking-[0.25em] text-[#4F5C18] uppercase mb-3 flex items-center gap-2">
-              <FiGift size={13}/> Newsletter Perks
-            </span>
-            <h3 className="text-3xl sm:text-4xl font-serif font-black tracking-tight text-gray-900 mb-3">Gabung di Atelier</h3>
-            <p className="text-[13px] text-gray-400 mb-8 leading-relaxed max-w-md">Dapatkan info rilis produk eksklusif dan adaptasi tren kecantikan lab langsung ke email Anda.</p>
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3.5">
-              {/* 4. Ditambahkan properti ref={emailInputRef} pada komponen LumiereInput di bawah ini */}
-              <LumiereInput 
-                ref={emailInputRef}
-                type="email" 
-                placeholder="Masukkan alamat email aktif anda..." 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                className="flex-grow bg-gray-50 h-16 rounded-xl px-6 border border-gray-200 focus:bg-white focus:border-[#4F5C18] text-[13px] transition-all" 
-              />
-              <button type="submit" className="h-16 px-10 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2.5 shadow-md">
-                {subscribed ? "Terdaftar ✓" : <>Join Now <FiArrowRight size={14}/></>}
-              </button>
-            </form>
-          </div>
-          
-          <div className="lg:col-span-2 bg-[#4F5C18] p-14 rounded-[2.5rem] text-white flex flex-col justify-between shadow-xl shadow-[#4F5C18]/10 relative overflow-hidden group">
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-black/10 rounded-full transition-transform group-hover:scale-110 duration-500"></div>
-            <div>
-              <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center mb-8 shadow-inner">
-                <FiBox size={26} className="text-white" />
-              </div>
-              <h3 className="text-xl font-black uppercase tracking-wider mb-3">Lumière Store</h3>
-              <p className="text-[13px] opacity-85 tracking-wide leading-relaxed">Kunjungi gerai fisik *offline* kami untuk konsultasi warna kulit personal secara instan bersama pakar kosmetik.</p>
+          {/* TAB 2: SEKSI LACAK LOGISTIK */}
+          {currentDashboardTab === "pesanan" && (
+            <div ref={lacakRef} className="scroll-mt-24 bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 text-left space-y-6 shadow-2xs animate-in fade-in duration-300 w-full">
+              {!selectedOrder ? (
+                <>
+                  <div className="border-b border-slate-100 pb-4">
+                    <h2 className="text-md font-bold text-slate-900 uppercase tracking-tight">Pelacakan Pesanan Real-time</h2>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {orderHistoryData.map((order) => (
+                      <div key={order.id} className="py-5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">{order.id}</span>
+                            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${order.step === 4 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                              • {order.status}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 mt-1">{order.items}</p>
+                          <p className="text-xs text-slate-400">{order.date} • Total: <span className="font-semibold text-slate-800">{order.total}</span></p>
+                        </div>
+                        <button
+                          onClick={() => { setSelectedOrder(order); setIsHistoryOpen(true); }}
+                          className="px-4 py-2.5 bg-slate-950 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-[#4F5C18] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <FiTruck size={12} /> Live Tracking
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6 w-full">
+                  <button onClick={() => setSelectedOrder(null)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0">
+                    ← Kembali ke Daftar Pembelian
+                  </button>
+                  <div className="border border-slate-100 p-6 bg-white rounded-2xl relative flex justify-between items-center overflow-x-auto w-full">
+                    <div className="absolute left-10 right-10 top-10 h-0.5 bg-slate-100 -z-0"></div>
+                    {["Diterima Hub", "Lolos QC Lab", "Dalam Perjalanan", "Selesai Diterima"].map((label, idx) => {
+                      const currentStep = idx + 1;
+                      const isPast = selectedOrder.step >= currentStep;
+                      return (
+                        <div key={label} className="flex flex-col items-center relative z-10 bg-white px-3 min-w-[90px]">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${isPast ? 'bg-[#4F5C18] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            {selectedOrder.step > currentStep ? <FiCheckCircle size={14} /> : `0${currentStep}`}
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-500 mt-2 uppercase tracking-wide text-center">{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mt-12 pt-5 border-t border-white/10 flex items-center gap-2.5 text-[12px] opacity-90 font-medium">
-              <FiMapPin size={15} className="text-white/80"/> Pondok Indah Mall 3, Jakarta Selatan.
-            </div>
-          </div>
-        </section>
+          )}
+        </main>
       </div>
 
-      {/* ADDED: GUEST DASHBOARD SYSTEM FOOTER AREA */}
-      <footer className="w-full bg-white border-t border-gray-100 py-8 px-12 flex flex-col sm:flex-row justify-between items-center gap-4 mt-12 text-[12px] text-gray-400 font-medium">
-        <div className="flex items-center gap-2">
-          <FiShield className="text-[#4F5C18]" size={15} />
-          <span>&copy; {new Date().getFullYear()} Lumière Atelier. Powered by CRM Local System.</span>
+      {/* SHOPPING BAG DRAWER OVERLAY */}
+      {isBagOpen && (
+        <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-xs z-50 flex justify-end">
+          <div className="w-full max-w-md bg-white h-full p-6 flex flex-col justify-between shadow-2xl text-left animate-in slide-in-from-right duration-300">
+            <div>
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2"><FiShoppingBag /> Bag Items</h3>
+                <button onClick={() => setIsBagOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 cursor-pointer"><FiX size={16} /></button>
+              </div>
+              <div className="space-y-3 overflow-y-auto max-h-[65vh]">
+                {cartItems.map((item) => (
+                  <div key={item.cartId} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                    <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                    <button onClick={() => setCartItems(prev => prev.filter(i => i.cartId !== item.cartId))} className="text-slate-300 hover:text-rose-500 cursor-pointer"><FiX size={13} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => { setIsBagOpen(false); setCurrentDashboardTab("pesanan"); }} className="w-full py-3.5 bg-slate-950 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl cursor-pointer">Periksa Pengiriman</button>
+          </div>
         </div>
-        <div className="flex items-center gap-6">
-          <span className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block shadow-xs"></span> Environment: Guest Environment
-          </span>
-          <span className="text-gray-200">|</span>
-          <span className="text-gray-400 hover:text-[#4F5C18] cursor-pointer transition-colors">Privacy & Terms</span>
+      )}
+
+      {/* RICH DARK PREMIUM FOOTER */}
+      <footer ref={footerRef} className="w-full bg-[#030712] text-left text-slate-400 pt-16 pb-12 mt-28 border-t border-slate-900 scroll-mt-24 relative px-6 md:px-12">
+        <div className="absolute -top-5 right-12">
+          <button 
+            onClick={() => homeRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="w-10 h-10 bg-slate-900 border border-slate-800 text-slate-400 rounded-full flex items-center justify-center hover:border-slate-600 hover:text-white transition-all shadow-md cursor-pointer"
+            title="Kembali ke Atas"
+          >
+            <FiChevronUp size={18} />
+          </button>
+        </div>
+
+        <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 border-b border-slate-800/60">
+          <div className="md:col-span-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#4F5C18] text-white flex items-center justify-center font-serif italic font-bold text-sm rounded-lg">
+                L
+              </div>
+              <span className="text-white font-bold tracking-wide text-md uppercase">Lumière Atelier</span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+              Sistem Manajemen Hub Hubungan Pelanggan (CRM) & Katalog Interaktif Eksklusif untuk penelusuran produk estetika organik berstandar internasional.
+            </p>
+          </div>
+
+          <div className="md:col-span-2 space-y-3">
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Navigasi</h4>
+            <ul className="space-y-2 text-xs font-semibold">
+              <li>
+                <button onClick={() => handleScrollToSection(homeRef, "katalog")} className="hover:text-[#A3E635] text-left transition-colors cursor-pointer bg-transparent border-none p-0 text-slate-400 font-semibold uppercase tracking-wider">
+                  Katalog Utama
+                </button>
+              </li>
+              <li>
+                <button onClick={() => handleScrollToSection(lacakRef, "pesanan")} className="hover:text-[#A3E635] text-left transition-colors cursor-pointer bg-transparent border-none p-0 text-slate-400 font-semibold uppercase tracking-wider">
+                  Lacak Paket
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div className="md:col-span-3 space-y-3">
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Kontak Kami</h4>
+            <div className="text-xs space-y-2 leading-relaxed">
+              <p className="font-semibold text-slate-300">Lumière Global Laboratories</p>
+              <p className="text-slate-500">Jl. Aesthetic Boulevard No. 88, Menteng, Jakarta Pusat</p>
+              <p className="text-[#A3E635] font-bold pt-1">support@lumiereatelier.com</p>
+            </div>
+          </div>
+
+          <div className="md:col-span-3 space-y-3">
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Jaminan Mutu</h4>
+            <ul className="space-y-2 text-xs font-semibold text-slate-500">
+              <li className="text-slate-300">✓ Teruji Klinis Derma-Lab</li>
+              <li>✓ Terdaftar BPOM RI & Halal</li>
+              <li>✓ Enkripsi Data Kuki Lokal Aman</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="w-full pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 font-medium">
+          <div>
+            © {new Date().getFullYear()} Lumière Atelier CRM System. All rights reserved.
+          </div>
         </div>
       </footer>
 
-      <Footer />
+      {/* FLOATING popup TOAST ALERT */}
+      {alertMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-xl animate-in fade-in duration-200">
+          {alertMsg}
+        </div>
+      )}
     </div>
   );
 };
