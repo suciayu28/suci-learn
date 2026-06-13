@@ -7,13 +7,13 @@ import {
   FaChevronLeft, 
   FaChevronRight, 
   FaEye, 
-  FaFilter, 
   FaCrown, 
   FaTimes, 
   FaEllipsisV,
   FaCheck,
   FaBan,
-  FaClock
+  FaClock,
+  FaLock
 } from "react-icons/fa";
 import {
   Table,
@@ -27,6 +27,10 @@ import { getCRMData, saveCRMData } from "../lib/crmData";
 
 const Orders = () => {
   const navigate = useNavigate();
+  
+  // ─── STATE PROTEKSI ROLE ADMIN ──────────────────────────────────────
+  const [currentRole, setCurrentRole] = useState(null);
+
   const [orders, setOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,18 +42,28 @@ const Orders = () => {
   const itemsPerPage = 8;
   const searchInputRef = useRef(null);
 
-  // Load orders from shared crm database
+  // Load orders and verify user authentication role
   useEffect(() => {
+    // 1. Cek validasi role dari localStorage
+    const savedUser = localStorage.getItem("userLoggedIn");
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setCurrentRole(userData.role || "Customer");
+    } else {
+      setCurrentRole("Guest");
+    }
+
+    // 2. Ambil data transaksi CRM
     const db = getCRMData();
-    setOrders(db.orders);
+    setOrders(db.orders || []);
   }, []);
 
   // Auto focus search input
   useEffect(() => {
-    if (searchInputRef.current) {
+    if (searchInputRef.current && currentRole === "Admin") {
       searchInputRef.current.focus();
     }
-  }, []);
+  }, [currentRole]);
 
   // Filter logic
   const filteredOrders = orders.filter(order => {
@@ -99,6 +113,37 @@ const Orders = () => {
     alert(`Success! Order ${orderId} status changed to ${newStatus}.`);
   };
 
+  // ─── 1. LOADING STATE CEK AUTHENTICATION ────────────────────────────
+  if (currentRole === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[75vh]">
+        <div className="w-8 h-8 border-4 border-[#4F5C18] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // ─── 2. BLOKADE KONTEN JIKA USER BUKAN ADMIN (CUSTOMER / GUEST) ──────
+  if (currentRole !== "Admin") {
+    return (
+      <div className="animate-in fade-in duration-500 flex flex-col items-center justify-center min-h-[70vh] px-4 font-poppins text-center text-[#262626]">
+        <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500 mb-6 border border-rose-100 shadow-sm animate-bounce">
+          <FaLock size={32} />
+        </div>
+        <h3 className="font-playfair font-black text-3xl mb-2 tracking-tight">Access Denied</h3>
+        <p className="text-sm text-gray-500 max-w-md mb-8 leading-relaxed">
+          Maaf, halaman Manajemen Transaksi ini bersifat rahasia dan hanya dapat diakses oleh akun **Administrator**.
+        </p>
+        <button
+          onClick={() => navigate("/")}
+          className="px-8 py-3.5 bg-[#262626] text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-md cursor-pointer"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    );
+  }
+
+  // ─── 3. TAMPILAN UTUH HALAMAN TRANSAKSI (HANYA UNTUK ADMIN) ─────────
   return (
     <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins relative">
       <PageHeader title="Transaction Management" breadcrumb={["CRM", "Transactions"]}>

@@ -4,7 +4,7 @@ import PageHeader from "../components/PageHeader";
 import { 
   FaUserPlus, FaGem, FaMedal, FaAward, FaSearch, 
   FaTimes, FaSave, FaEdit, FaTrash, FaEye, 
-  FaChevronLeft, FaChevronRight 
+  FaChevronLeft, FaChevronRight, FaLock 
 } from "react-icons/fa";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +24,10 @@ import {
 
 const Customers = () => {
   const navigate = useNavigate();
+  
+  // ─── STATE PROTEKSI ROLE ADMIN ──────────────────────────────────────
+  const [currentRole, setCurrentRole] = useState(null);
+
   const [customers, setCustomers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,8 +51,18 @@ const Customers = () => {
   const addNameInputRef = useRef(null);
   const editNameInputRef = useRef(null);
 
-  // Load data dari DB
+  // Load data & Cek Otoritas Otentikasi
   useEffect(() => {
+    // 1. Validasi Role User dari LocalStorage
+    const savedUser = localStorage.getItem("userLoggedIn");
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setCurrentRole(userData.role?.toLowerCase() || "customer");
+    } else {
+      setCurrentRole("guest");
+    }
+
+    // 2. Load DB CRM Data
     const db = getCRMData();
     setCustomers(db.customers || []);
   }, []);
@@ -56,7 +70,7 @@ const Customers = () => {
   // Auto-focus inputs
   useEffect(() => {
     if (searchInputRef.current) searchInputRef.current.focus();
-  }, []);
+  }, [currentRole]); // Dipicu ulang setelah status role terverifikasi
 
   useEffect(() => {
     if (isAddModalOpen && addNameInputRef.current) {
@@ -186,6 +200,37 @@ const Customers = () => {
     setEditingCustomer(null);
   };
 
+  // ─── 1. KONDISI LOADING VERIFIKASI AKSES ────────────────────────────
+  if (currentRole === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[75vh]">
+        <div className="w-8 h-8 border-4 border-[#4F5C18] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // ─── 2. BLOKADE TOTAL JIKA BUKAN ADMIN ──────────────────────────────
+  if (currentRole !== "admin") {
+    return (
+      <div className="animate-in fade-in duration-500 flex flex-col items-center justify-center min-h-[70vh] px-4 font-poppins text-center text-[#262626]">
+        <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500 mb-6 border border-rose-100 shadow-sm animate-bounce">
+          <FaLock size={28} />
+        </div>
+        <h3 className="font-playfair font-bold text-3xl mb-2 tracking-tight">Access Denied</h3>
+        <p className="text-sm text-gray-500 max-w-md mb-8 leading-relaxed">
+          Maaf, halaman **Customer CRM Directory** ini bersifat rahasia dan hanya diizinkan untuk diakses oleh level otoritas **Admin**.
+        </p>
+        <button
+          onClick={() => navigate("/")}
+          className="px-8 py-3.5 bg-[#262626] text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-md cursor-pointer"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    );
+  }
+
+  // ─── 3. TAMPILAN UTAMA (HANYA AKAN MERENDER JIKA ADMIN) ─────────────
   return (
     <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins relative">
       
@@ -630,36 +675,39 @@ const Customers = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="p-10 text-center text-gray-400 italic">
-                  No customer matched the search criteria.
+                <TableCell colSpan={7} className="p-10 text-center text-sm font-medium text-gray-400">
+                  No customers found matching the selected filters.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+      </div>
 
-        {/* Pagination Footer */}
-        <div className="p-6 border-t border-[#F3F3F3] flex items-center justify-between bg-[#F3F3F3]/20">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Showing {currentCustomers.length} of {filteredCustomers.length} Customers | Page {currentPage} of {totalPages || 1}
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 px-2">
+          <p className="text-[11px] text-gray-400 font-medium">
+            Showing Page **{currentPage}** of **{totalPages}** ({filteredCustomers.length} total users)
           </p>
-          <div className="flex gap-2">
-            <button 
-              disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} 
-              className="p-3 rounded-xl border border-[#F3F3F3] bg-white text-[#4F5C18] disabled:opacity-30 hover:bg-[#F3F3F3] transition-all cursor-pointer"
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="p-3 bg-white border border-[#F3F3F3] text-[#262626] rounded-xl hover:bg-gray-50 transition-all disabled:opacity-40 cursor-pointer shadow-sm"
             >
-              <FaChevronLeft size={12} />
+              <FaChevronLeft size={10} />
             </button>
-            <button 
-              disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)} 
-              className="p-3 rounded-xl border border-[#F3F3F3] bg-white text-[#4F5C18] disabled:opacity-30 hover:bg-[#F3F3F3] transition-all cursor-pointer"
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="p-3 bg-white border border-[#F3F3F3] text-[#262626] rounded-xl hover:bg-gray-50 transition-all disabled:opacity-40 cursor-pointer shadow-sm"
             >
-              <FaChevronRight size={12} />
+              <FaChevronRight size={10} />
             </button>
           </div>
         </div>
-      </div>
-
+      )}
     </div>
   );
 };

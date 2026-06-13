@@ -54,9 +54,22 @@ const supabase = {
             const response = await axios.get(API_URL, { headers });
             const user = response.data.find(u => u.email === email && u.password === password);
             if (!user) throw new Error("Atelier Identity atau Secret Key salah!");
-            return { data: { user }, error: null };
+            
+            // PERBAIKAN: Pastikan data role bawaan dari database ikut dikirim keluar 
+            // agar file Login/Membership tahu dia Admin atau Customer
+            return { 
+                data: { 
+                    user: {
+                        email: user.email,
+                        role: user.role // Menangkap field role ("Admin" / "Customer") dari Supabase
+                    } 
+                }, 
+                error: null 
+            };
         }
     }
 };
 
+// Double Export agar aman dipanggil via import default maupun destructuring { supabase }
+export { supabase }; 
 export default supabase;

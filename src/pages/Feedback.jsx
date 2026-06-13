@@ -17,6 +17,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SENTIMENT_OPTIONS, STATUS_OPTIONS } from "@/data/feedbackData.js";
 
 const Feedback = () => {
+  // ─── STATE PROTEKSI ROLE ─────────────────────────────────────────────
+  const [currentRole, setCurrentRole] = useState(null);
+  const [userLoggedInData, setUserLoggedInData] = useState(null);
+
   const [reviews, setReviews] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSentiment, setFilterSentiment] = useState("All");
@@ -27,10 +31,25 @@ const Feedback = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
 
+  // State Form Baru khusus Customer
+  const [custRating, setCustRating] = useState(5);
+  const [custComment, setCustComment] = useState("");
+
   // Refs
   const replyTextareaRef = useRef(null);
 
   useEffect(() => {
+    // 1. Cek Role User Login
+    const savedUser = localStorage.getItem("userLoggedIn");
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setCurrentRole(userData.role || "Customer");
+      setUserLoggedInData(userData);
+    } else {
+      setCurrentRole("Guest");
+    }
+
+    // 2. Ambil data CRM
     const db = getCRMData();
     setReviews(db.reviews || []);
   }, []);
@@ -110,6 +129,103 @@ const Feedback = () => {
     saveCRMData(db);
   };
 
+  // ─── LOGIKAL KIRIM FEEDBACK KHUSUS CUSTOMER ───────────────────────────
+  const handleCustomerSubmitFeedback = (e) => {
+    e.preventDefault();
+    
+    let sentiment = "Neutral";
+    if (custRating >= 4) sentiment = "Positive";
+    if (custRating <= 2) sentiment = "Negative";
+
+    const name = userLoggedInData?.email ? userLoggedInData.email.split("@")[0] : "Customer";
+    const initials = name.substring(0, 2).toUpperCase();
+
+    const newFeedback = {
+      id: `REV-${(reviews.length + 1).toString().padStart(3, "0")}`,
+      customerName: name.charAt(0).toUpperCase() + name.slice(1),
+      avatar: initials,
+      rating: custRating,
+      comment: custComment,
+      sentiment: sentiment,
+      status: "Pending",
+      date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      adminReply: ""
+    };
+
+    const updatedReviews = [newFeedback, ...reviews];
+    setReviews(updatedReviews);
+
+    const db = getCRMData();
+    db.reviews = updatedReviews;
+    saveCRMData(db);
+
+    setCustComment("");
+    setCustRating(5);
+    alert("Terima kasih! Feedback Anda berhasil dikirim dan akan ditinjau oleh Admin.");
+  };
+
+  // ─── LOADING STATE SAAT CEK ROLE ──────────────────────────────────────
+  if (currentRole === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="w-8 h-8 border-4 border-[#4F5C18] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // ─── TAMPILAN KHUSUS CUSTOMER (HANYA BISA KIRIM FEEDBACK) ─────────────
+  if (currentRole === "Customer") {
+    return (
+      <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins text-[#262626]">
+        <PageHeader title="Submit Product Feedback" breadcrumb={["CRM", "My Feedback"]} />
+        
+        <div className="max-w-xl mx-auto mt-8 bg-white rounded-[2.5rem] p-10 border border-[#F3F3F3] shadow-sm">
+          <div className="text-center mb-8">
+            <h3 className="font-playfair font-bold text-2xl text-[#262626] mb-2">Bagikan Pengalaman Anda</h3>
+            <p className="text-xs text-gray-400">Feedback Anda sangat berharga bagi peningkatan kualitas layanan Lumiere Atelier.</p>
+          </div>
+
+          <form onSubmit={handleCustomerSubmitFeedback} className="space-y-6">
+            {/* Input Rating Bintang */}
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 block text-center">Berikan Rating</label>
+              <div className="flex justify-center gap-2 text-amber-400">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => setCustRating(i + 1)}
+                    className="cursor-pointer transition-transform hover:scale-110 focus:outline-none"
+                  >
+                    <FiStar className={i < custRating ? "fill-amber-400" : ""} size={32} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input Komentar */}
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Ulasan / Komentar</label>
+              <textarea
+                required
+                rows={5}
+                className="w-full px-5 py-4 bg-[#F3F3F3] rounded-2xl border-none outline-none text-sm leading-relaxed resize-none focus:ring-2 focus:ring-[#4F5C18]/20"
+                placeholder="Tuliskan pengalaman Anda menggunakan produk kami di sini..."
+                value={custComment}
+                onChange={(e) => setCustComment(e.target.value)}
+              />
+            </div>
+
+            <button type="submit" className="w-full bg-[#4F5C18] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4F5C18]/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer">
+              <FiSend /> Kirim Feedback
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── TAMPILAN UTUH KHUSUS ADMIN (KODE ASLI KAMU) ──────────────────────
   return (
     <div className="animate-in fade-in duration-500 pb-10 px-4 font-poppins text-[#262626]">
       <PageHeader title="Feedback & Review Directory" breadcrumb={["CRM", "Feedback"]} />

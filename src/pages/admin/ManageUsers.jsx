@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import axios from "axios"; // Langsung pakai axios di sini
-import { FiTrash2, FiUser, FiShield, FiRefreshCw, FiAlertCircle } from "react-icons/fi";
+import { useNavigate } from "react-router-dom"; // Import untuk navigasi balik
+import axios from "axios"; 
+import { FiTrash2, FiUser, FiShield, FiRefreshCw, FiAlertCircle, FiLock } from "react-icons/fi";
 
-// Konfigurasi API langsung ditaruh di dalam file agar bebas error path/import
 const API_URL = "https://kxhxoltfjedlzqtljkfs.supabase.co/rest/v1/login";
 const API_KEY = "sb_publishable_AbEQ5p5obbAPGWaFtaJ-7Q_wYqPROX_";
 
@@ -13,6 +13,11 @@ const headers = {
 };
 
 export default function ManageUsers() {
+    const navigate = useNavigate();
+    
+    // ─── STATE PROTEKSI ROLE ADMIN ──────────────────────────────────────
+    const [currentRole, setCurrentRole] = useState(null);
+    
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -33,6 +38,16 @@ export default function ManageUsers() {
     };
 
     useEffect(() => {
+        // Pengecekan otentikasi role saat halaman pertama kali dimuat
+        const savedUser = localStorage.getItem("userLoggedIn");
+        if (savedUser) {
+            const userData = JSON.parse(savedUser);
+            // Sesuaikan lowercase/uppercase dengan data login Anda ("admin" / "Admin")
+            setCurrentRole(userData.role?.toLowerCase() || "customer");
+        } else {
+            setCurrentRole("guest");
+        }
+
         fetchUsers();
     }, []);
 
@@ -45,10 +60,7 @@ export default function ManageUsers() {
         setError("");
 
         try {
-            // Menggunakan query params REST Supabase yang kamu buat tadi: ?id=eq.${id}
             await axios.delete(`${API_URL}?id=eq.${id}`, { headers });
-            
-            // Jika sukses di database Supabase, langsung saring keluar dari layar web secara real-time
             setUsers(users.filter((user) => user.id !== id));
         } catch (err) {
             setError(err.response?.data?.message || "Gagal menghapus data dari Supabase.");
@@ -57,6 +69,37 @@ export default function ManageUsers() {
         }
     };
 
+    // ─── 1. LOADING STATE PROSES VERIFIKASI AKSES ────────────────────────
+    if (currentRole === null) {
+        return (
+            <div className="flex items-center justify-center min-h-[75vh]">
+                <div className="w-8 h-8 border-4 border-[#4F5C18] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    // ─── 2. BLOKADE TOTAL JIKA USER BUKAN ADMIN ─────────────────────────
+    if (currentRole !== "admin") {
+        return (
+            <div className="animate-in fade-in duration-500 flex flex-col items-center justify-center min-h-[70vh] px-4 font-poppins text-center text-[#262626]">
+                <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500 mb-6 border border-rose-100 shadow-sm animate-bounce">
+                    <FiLock size={32} />
+                </div>
+                <h3 className="font-['Playfair_Display'] italic text-3xl mb-2 tracking-tight">Access Denied</h3>
+                <p className="text-sm text-gray-500 max-w-md mb-8 leading-relaxed">
+                    Maaf, halaman **Identity Directory** ini bersifat rahasia dan dikunci khusus untuk level otoritas **Admin**.
+                </p>
+                <button
+                    onClick={() => navigate("/")}
+                    className="px-8 py-3.5 bg-[#262626] text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-md cursor-pointer"
+                >
+                    Kembali ke Beranda
+                </button>
+            </div>
+        );
+    }
+
+    // ─── 3. TAMPILAN HALAMAN UTAMA (HANYA AKAN MERENDER JIKA ADMIN) ─────
     return (
         <div className="p-6 md:p-10 max-w-6xl mx-auto font-poppins text-[#262626]">
             
@@ -124,11 +167,11 @@ export default function ManageUsers() {
                                         </td>
                                         <td className="p-6">
                                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-black ${
-                                                user.role === "admin" 
+                                                user.role?.toLowerCase() === "admin" 
                                                     ? "bg-[#262626] text-white" 
                                                     : "bg-[#F2F7D6] text-[#4F5C18]"
                                             }`}>
-                                                {user.role === "admin" ? <FiShield size={10} /> : <FiUser size={10} />}
+                                                {user.role?.toLowerCase() === "admin" ? <FiShield size={10} /> : <FiUser size={10} />}
                                                 {user.role || "customer"}
                                             </span>
                                         </td>

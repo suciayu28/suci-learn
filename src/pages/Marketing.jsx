@@ -10,22 +10,24 @@ import {
   FiUsers, 
   FiPlay,
   FiPause,
-  FiCheckCircle
+  FiCheckCircle,
+  FiAlertTriangle // Icon tambahan untuk halaman Access Denied
 } from "react-icons/fi";
 import { 
   ResponsiveContainer, 
   PieChart, 
   Pie, 
   Cell,
-  Tooltip as ChartTooltip, 
+  Tooltip as ChartTooltip, //  Gunakan alias 'as' di sini
   Legend 
 } from "recharts";
 import { getCRMData, saveCRMData } from "../lib/crmData";
-
-// Import data pilihan channel yang sudah dipisah menggunakan alias @/
 import { ACQUISITION_CHANNELS } from "@/data/marketingData.js";
 
 const Marketing = () => {
+  // ─── STATE PROTEKSI ROLE ─────────────────────────────────────────────
+  const [currentRole, setCurrentRole] = useState(null); // null berarti sedang loading cek role
+  
   const [campaigns, setCampaigns] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [activeTab, setActiveTab] = useState("campaigns");
@@ -45,6 +47,16 @@ const Marketing = () => {
   const nameInputRef = useRef(null);
 
   useEffect(() => {
+    // 1. Ambil data user login untuk cek Role Admin
+    const savedUser = localStorage.getItem("userLoggedIn");
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setCurrentRole(userData.role || "Customer");
+    } else {
+      setCurrentRole("Guest");
+    }
+
+    // 2. Ambil data CRM
     const db = getCRMData();
     setCampaigns(db.campaigns || []);
     setCustomers(db.customers || []);
@@ -57,13 +69,38 @@ const Marketing = () => {
     }
   }, [isDialogOpen]);
 
-  // Calculations
+  // ─── PROTEKSI SCREEN: JIKA BUKAN ADMIN ───────────────────────────────
+  if (currentRole !== null && currentRole !== "Admin") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center font-poppins animate-in fade-in duration-300">
+        <div className="p-5 bg-rose-50 text-rose-600 rounded-full mb-4 animate-bounce">
+          <FiAlertTriangle size={40} />
+        </div>
+        <h2 className="font-playfair font-black text-2xl text-[#262626] mb-2">
+          Akses Terbatas
+        </h2>
+        <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
+          Maaf, halaman <span className="font-bold text-gray-600">Marketing & Engagement Portal</span> hanya dapat diakses oleh akun dengan otoritas <span className="text-rose-600 font-bold">Admin</span>.
+        </p>
+      </div>
+    );
+  }
+
+  // JIKA SEDANG CEK ROLE (LOADING STATE)
+  if (currentRole === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="w-8 h-8 border-4 border-[#4F5C18] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // ─── CALCULATIONS & LOGIC MARKETING (DIJALANKAN JIKA LOLOS ADMIN) ───
   const totalCampaigns = campaigns.length;
   const activeCampaigns = campaigns.filter(c => c.status === "Active").length;
   const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
   const totalConversions = campaigns.reduce((sum, c) => sum + c.conversions, 0);
 
-  // Recharts: User Source distribution
   const sourceCounts = customers.reduce((acc, c) => {
     acc[c.source] = (acc[c.source] || 0) + 1;
     return acc;
@@ -135,7 +172,7 @@ const Marketing = () => {
       <PageHeader title="Marketing & Engagement Portal" breadcrumb={["CRM", "Marketing"]}>
         <button 
           onClick={() => setIsDialogOpen(true)}
-          className="bg-[#4F5C18] text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:opacity-90 shadow-lg shadow-[#4F5C18]/20 transition-all flex items-center gap-2"
+          className="bg-[#4F5C18] text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:opacity-90 shadow-lg shadow-[#4F5C18]/20 transition-all flex items-center gap-2 cursor-pointer"
         >
           <FiPlus size={14} /> Create Campaign
         </button>
@@ -143,7 +180,6 @@ const Marketing = () => {
 
       {/* 1. MARKETING METRICS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 mb-8">
-        {/* Total Spend */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl"><FiDollarSign size={24} /></div>
           <div>
@@ -152,7 +188,6 @@ const Marketing = () => {
           </div>
         </div>
 
-        {/* Conversions */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl"><FiTrendingUp size={24} /></div>
           <div>
@@ -161,7 +196,6 @@ const Marketing = () => {
           </div>
         </div>
 
-        {/* Campaigns Count */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl"><HiOutlineMegaphone size={24} /></div>
           <div>
@@ -170,7 +204,6 @@ const Marketing = () => {
           </div>
         </div>
 
-        {/* Reach */}
         <div className="bg-white rounded-3xl p-6 border border-[#F3F3F3] shadow-sm flex items-center gap-5">
           <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl"><FiUsers size={24} /></div>
           <div>
@@ -186,7 +219,7 @@ const Marketing = () => {
       <div className="flex gap-2 border-b border-[#F3F3F3] pb-4 mb-6">
         <button
           onClick={() => setActiveTab("campaigns")}
-          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${
             activeTab === "campaigns" ? "bg-[#262626] text-white" : "bg-white text-gray-400 hover:text-[#262626]"
           }`}
         >
@@ -194,7 +227,7 @@ const Marketing = () => {
         </button>
         <button
           onClick={() => setActiveTab("acquisition")}
-          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${
             activeTab === "acquisition" ? "bg-[#262626] text-white" : "bg-white text-gray-400 hover:text-[#262626]"
           }`}
         >
@@ -212,8 +245,6 @@ const Marketing = () => {
                   <span className="text-[9px] font-black uppercase text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-lg font-mono">
                     {camp.id}
                   </span>
-                  
-                  {/* Status Badge */}
                   <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1 ${
                     camp.status === "Active" ? "bg-emerald-50 text-emerald-600" :
                     camp.status === "Paused" ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-500"
@@ -247,7 +278,7 @@ const Marketing = () => {
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <button 
                   onClick={() => toggleCampaignStatus(camp.id)}
-                  className="w-full py-2 bg-[#F3F3F3] text-gray-500 hover:bg-[#4F5C18] hover:text-white rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all"
+                  className="w-full py-2 bg-[#F3F3F3] text-gray-500 hover:bg-[#4F5C18] hover:text-white rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all cursor-pointer"
                 >
                   Change Campaign Status
                 </button>
@@ -259,7 +290,6 @@ const Marketing = () => {
 
       {activeTab === "acquisition" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Visual Pie Chart */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
             <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Acquisition Source Split</h4>
             <div className="h-72 w-full">
@@ -285,7 +315,6 @@ const Marketing = () => {
             </div>
           </div>
 
-          {/* Table Breakdown */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-[#F3F3F3] shadow-sm">
             <h4 className="font-playfair font-bold text-xl text-[#262626] mb-6">Source Breakdown</h4>
             <div className="space-y-4">
@@ -314,7 +343,7 @@ const Marketing = () => {
           <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-playfair font-bold text-2xl text-[#262626]">Create Campaign</h3>
-              <button onClick={() => { setIsDialogOpen(false); resetForm(); }} className="text-gray-400 hover:text-red-500 transition-colors">
+              <button onClick={() => { setIsDialogOpen(false); resetForm(); }} className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
                 <FiX size={20} />
               </button>
             </div>
@@ -332,7 +361,6 @@ const Marketing = () => {
                 />
               </div>
 
-              {/* Bersih dari Hardcode: Di-render via array map */}
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Acquisition Channel</label>
                 <select 
@@ -385,7 +413,7 @@ const Marketing = () => {
                 />
               </div>
 
-              <button type="submit" className="w-full bg-[#4F5C18] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4F5C18]/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4">
+              <button type="submit" className="w-full bg-[#4F5C18] text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4F5C18]/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer">
                 <FiSave /> Launch Campaign
               </button>
             </form>

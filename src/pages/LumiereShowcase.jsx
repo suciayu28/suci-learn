@@ -31,11 +31,16 @@ const LumiereShowcase = () => {
   const [cartItems, setCartItems] = useState([]);
   const [alertMsg, setAlertMsg] = useState("");
   const [isBagOpen, setIsBagOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   
   // State navigasi internal dashboard
   const [currentDashboardTab, setCurrentDashboardTab] = useState("katalog"); 
+
+  // --- STATE DYNAMIC CHECKOUT & ORDER HISTORY ---
+  const [dynamicOrders, setDynamicOrders] = useState([
+    { id: "LM-88429910X", date: "07 Juni 2026", total: "Rp 1.450.000", items: "2 Items (Lumiere Serum, Lip Tint)", status: "Dalam Pengiriman", step: 3 },
+    { id: "LM-77312544A", date: "28 Mei 2026", total: "Rp 680.000", items: "1 Item (Atelier Fragrance)", status: "Selesai", step: 4 }
+  ]);
 
   // --- REFS UNTUK AUTO-SCROLL INTERAKTIF ---
   const homeRef = useRef(null);
@@ -48,11 +53,8 @@ const LumiereShowcase = () => {
   const handleScrollToSection = (elementRef, tabName = null) => {
     if (tabName) {
       setCurrentDashboardTab(tabName);
-      if (tabName === "pesanan") {
-        setIsHistoryOpen(true);
+      if (tabName !== "pesanan") {
         setSelectedOrder(null);
-      } else {
-        setIsHistoryOpen(false);
       }
     }
     
@@ -60,12 +62,6 @@ const LumiereShowcase = () => {
       elementRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
-
-  // Mock Data Riwayat Transaksi Guest
-  const orderHistoryData = [
-    { id: "LM-88429910X", date: "07 Juni 2026", total: "Rp 1.450.000", items: "2 Items (Lumiere Serum, Lip Tint)", status: "Dalam Pengiriman", step: 3 },
-    { id: "LM-77312544A", date: "28 Mei 2026", total: "Rp 680.000", items: "1 Item (Atelier Fragrance)", status: "Selesai", step: 4 }
-  ];
 
   useEffect(() => {
     if (subscribed && emailInputRef.current) {
@@ -88,9 +84,54 @@ const LumiereShowcase = () => {
   }, [products, activeCategory, showAll]);
 
   const handleAddToBag = (product) => {
-    setCartItems(prev => [...prev, { ...product, cartId: Date.now() }]);
+    // Memastikan harga diubah ke format angka murni jika tipenya string
+    const numericPrice = typeof product.price === 'number' 
+      ? product.price 
+      : parseInt(String(product.price).replace(/[^0-9]/g, "")) || 0;
+
+    setCartItems(prev => [...prev, { ...product, numericPrice, cartId: Date.now() }]);
     setAlertMsg(`${product.title} ditambahkan!`);
     setTimeout(() => setAlertMsg(""), 3000);
+  };
+
+  // --- FUNGSI TOTAL BELANJA ---
+  const cartTotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + (item.numericPrice || 0), 0);
+  }, [cartItems]);
+
+  // --- ALUR CHECKOUT PESANAN (MENGGANTIKAN CRASH/LOG KOSONG) ---
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      setAlertMsg("Keranjang Anda masih kosong!");
+      setTimeout(() => setAlertMsg(""), 3000);
+      return;
+    }
+
+    // 1. Membuat string daftar item
+    const itemNames = cartItems.map(i => i.title).join(", ");
+    const totalItemsCount = cartItems.length;
+
+    // 2. Generate Invoice Acak Lumiere
+    const randomInvoice = `LM-${Math.floor(10000000 + Math.random() * 90000000)}X`;
+
+    // 3. Masukkan ke dalam antrean riwayat pesanan lokal
+    const newOrder = {
+      id: randomInvoice,
+      date: "Hari Ini, 13 Juni 2026",
+      total: `Rp ${cartTotal.toLocaleString("id-ID")}`,
+      items: `${totalItemsCount} Item (${itemNames})`,
+      status: "Diproses Lab",
+      step: 2
+    };
+
+    setDynamicOrders(prev => [newOrder, ...prev]);
+    
+    // 4. Reset & Alihkan Drawer langsung ke Lacak Paket
+    setCartItems([]);
+    setIsBagOpen(false);
+    setCurrentDashboardTab("pesanan");
+    setAlertMsg("Checkout Berhasil! Pesanan diproses ke Lab.");
+    setTimeout(() => setAlertMsg(""), 4000);
   };
 
   return (
@@ -149,13 +190,12 @@ const LumiereShowcase = () => {
             onClick={() => navigate("/login")}
             className="px-4 py-2 bg-slate-950 text-white text-[10px] font-bold tracking-widest uppercase rounded-xl hover:bg-[#4F5C18] transition-all flex items-center gap-2 cursor-pointer"
           >
-            <FiLogOut size={12} /> Admin
+            <FiLogOut size={12} /> LOGIN
           </button>
         </div>
       </nav>
 
       {/* ================= DASHBOARD MAIN WRAPPER ================= */}
-      {/* DINAMIS GRID: Jika tab katalog aktif, gunakan lebar penuh grid-cols-1 tanpa membagi space untuk sidebar */}
       <div className={`w-full px-6 md:px-12 py-6 grid gap-8 items-start ${
         currentDashboardTab === "katalog" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
       }`}>
@@ -165,7 +205,7 @@ const LumiereShowcase = () => {
           <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-28 text-left w-full">
             <div className="bg-white border border-slate-200/60 p-2 rounded-2xl shadow-2xs">
               <button 
-                onClick={() => { setCurrentDashboardTab("katalog"); setIsHistoryOpen(false); }}
+                onClick={() => { setCurrentDashboardTab("katalog"); }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                   currentDashboardTab === 'katalog' ? 'bg-[#4F5C18] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
                 }`}
@@ -175,14 +215,14 @@ const LumiereShowcase = () => {
               </button>
               
               <button 
-                onClick={() => { setCurrentDashboardTab("pesanan"); setIsHistoryOpen(true); setSelectedOrder(null); }}
+                onClick={() => { setCurrentDashboardTab("pesanan"); setSelectedOrder(null); }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 mt-1 cursor-pointer ${
                   currentDashboardTab === 'pesanan' ? 'bg-[#4F5C18] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
                 }`}
               >
                 <span className="flex items-center gap-3"><FiTruck size={13} /> Lacak Pengiriman</span>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${currentDashboardTab === 'pesanan' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {orderHistoryData.length}
+                  {dynamicOrders.length}
                 </span>
               </button>
             </div>
@@ -207,10 +247,9 @@ const LumiereShowcase = () => {
         )}
 
         {/* MAIN PANEL CONTAINER */}
-        {/* DINAMIS COL-SPAN: Mengambil seluruh kolom jika tab katalog aktif */}
         <main className={`space-y-6 w-full ${currentDashboardTab === "katalog" ? "col-span-1" : "lg:col-span-9"}`}>
           
-          {/* TAB 1: VIEW KATALOG UTAMA (SEKARANG FULL WIDTH) */}
+          {/* TAB 1: VIEW KATALOG UTAMA */}
           {currentDashboardTab === "katalog" && (
             <div className="space-y-6 animate-in fade-in duration-300 w-full">
               <div className="bg-white border border-slate-200/50 p-6 md:p-10 rounded-3xl text-left shadow-2xs relative overflow-hidden w-full">
@@ -235,7 +274,7 @@ const LumiereShowcase = () => {
                 ))}
               </div>
 
-              {/* Grid Produk - Diubah menjadi 3 Kolom di layar besar karena sudah full width */}
+              {/* Grid Produk */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
                 {filteredProducts.map((item) => (
                   <div key={item.id} className="bg-white border border-slate-200/40 p-4 rounded-2xl flex flex-col justify-between hover:shadow-md transition-all text-left relative">
@@ -275,12 +314,14 @@ const LumiereShowcase = () => {
                     <h2 className="text-md font-bold text-slate-900 uppercase tracking-tight">Pelacakan Pesanan Real-time</h2>
                   </div>
                   <div className="divide-y divide-slate-100">
-                    {orderHistoryData.map((order) => (
+                    {dynamicOrders.map((order) => (
                       <div key={order.id} className="py-5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2.5">
                             <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">{order.id}</span>
-                            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${order.step === 4 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                              order.step === 4 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                            }`}>
                               • {order.status}
                             </span>
                           </div>
@@ -288,7 +329,7 @@ const LumiereShowcase = () => {
                           <p className="text-xs text-slate-400">{order.date} • Total: <span className="font-semibold text-slate-800">{order.total}</span></p>
                         </div>
                         <button
-                          onClick={() => { setSelectedOrder(order); setIsHistoryOpen(true); }}
+                          onClick={() => { setSelectedOrder(order); }}
                           className="px-4 py-2.5 bg-slate-950 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-[#4F5C18] transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <FiTruck size={12} /> Live Tracking
@@ -300,7 +341,7 @@ const LumiereShowcase = () => {
               ) : (
                 <div className="space-y-6 w-full">
                   <button onClick={() => setSelectedOrder(null)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0">
-                    ← Kembali ke Daftar Pembelian
+                    Template_Daftar_Kembali ← Kembali ke Daftar Pembelian
                   </button>
                   <div className="border border-slate-100 p-6 bg-white rounded-2xl relative flex justify-between items-center overflow-x-auto w-full">
                     <div className="absolute left-10 right-10 top-10 h-0.5 bg-slate-100 -z-0"></div>
@@ -324,25 +365,70 @@ const LumiereShowcase = () => {
         </main>
       </div>
 
-      {/* SHOPPING BAG DRAWER OVERLAY */}
+      {/* ================= SHOPPING BAG DRAWER OVERLAY & CHECKOUT SYSTEM ================= */}
       {isBagOpen && (
         <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-xs z-50 flex justify-end">
           <div className="w-full max-w-md bg-white h-full p-6 flex flex-col justify-between shadow-2xl text-left animate-in slide-in-from-right duration-300">
-            <div>
+            <div className="flex flex-col h-full overflow-hidden">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
                 <h3 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2"><FiShoppingBag /> Bag Items</h3>
                 <button onClick={() => setIsBagOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 cursor-pointer"><FiX size={16} /></button>
               </div>
-              <div className="space-y-3 overflow-y-auto max-h-[65vh]">
-                {cartItems.map((item) => (
-                  <div key={item.cartId} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                    <span className="text-xs font-bold text-slate-800">{item.title}</span>
-                    <button onClick={() => setCartItems(prev => prev.filter(i => i.cartId !== item.cartId))} className="text-slate-300 hover:text-rose-500 cursor-pointer"><FiX size={13} /></button>
+              
+              {/* List Item */}
+              <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+                {cartItems.length > 0 ? (
+                  cartItems.map((item) => (
+                    <div key={item.cartId} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-800">{item.title}</span>
+                        <span className="text-[10px] text-[#4F5C18] font-bold mt-0.5">{item.price || `Rp ${item.numericPrice?.toLocaleString("id-ID")}`}</span>
+                      </div>
+                      <button onClick={() => setCartItems(prev => prev.filter(i => i.cartId !== item.cartId))} className="text-slate-300 hover:text-rose-500 cursor-pointer p-1"><FiX size={14} /></button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center py-20 text-slate-400">
+                    <FiShoppingBag size={28} className="stroke-1 text-slate-300 mb-2" />
+                    <p className="text-xs italic">Keranjang belanjaan Anda kosong.</p>
                   </div>
-                ))}
+                )}
               </div>
+
+              {/* Rincian Total Ringkasan */}
+              {cartItems.length > 0 && (
+                <div className="border-t border-slate-100 pt-4 mt-4 space-y-3 bg-white">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-medium">Subtotal Produk ({cartItems.length})</span>
+                    <span className="font-bold text-slate-900">Rp {cartTotal.toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-medium">Biaya Kirim Atelier</span>
+                    <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider">Gratis</span>
+                  </div>
+                  <div className="border-t border-dashed border-slate-200 my-2"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold uppercase text-slate-800 tracking-wider">Total Pembayaran</span>
+                    <span className="text-sm font-black text-slate-950">Rp {cartTotal.toLocaleString("id-ID")}</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <button onClick={() => { setIsBagOpen(false); setCurrentDashboardTab("pesanan"); }} className="w-full py-3.5 bg-slate-950 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl cursor-pointer">Periksa Pengiriman</button>
+
+            {/* Tombol Aksi Dinamis */}
+            <div className="mt-6">
+              <button 
+                onClick={handleCheckout} 
+                disabled={cartItems.length === 0}
+                className={`w-full py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  cartItems.length > 0 
+                    ? "bg-slate-950 text-white hover:bg-[#4F5C18] cursor-pointer" 
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                <FiCreditCard size={13} /> Checkout Sekarang
+              </button>
+            </div>
           </div>
         </div>
       )}

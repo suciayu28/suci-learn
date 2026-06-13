@@ -4,7 +4,7 @@ import { MdOutlineDownloading } from "react-icons/md";
 import { GiTerror } from "react-icons/gi";
 import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"; 
 
-// PERBAIKAN DI SINI: Mengimpor userAPI berbasis Axios dari file client kamu
+// Mengimpor userAPI berbasis Axios dari file client kamu
 import { userAPI } from "../../services/supabaseClient"; 
 
 export default function Login() {
@@ -21,11 +21,12 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // PERBAIKAN DI SINI: Menggunakan fungsi setter yang benar agar tidak crash
         setLoading(true);
         setError("");
 
         try {
-            // PERBAIKAN LOGIKA: Mengambil daftar user dari endpoint REST API Supabase via Axios
+            // Mengambil daftar user dari endpoint REST API Supabase via Axios
             const users = await userAPI.fetchUsers();
             
             // Mencari user yang email dan password-nya cocok
@@ -39,11 +40,22 @@ export default function Login() {
                 return;
             }
 
-            // Jika user ditemukan, simpan sesi ke localStorage
-            const userRole = validUser.role || "customer";
+            // Memastikan penulisan kapitalisasi role sesuai dengan pendaftaran (misal: "Admin" / "Customer")
+            const rawRole = validUser.role || "Customer";
+            const userRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
             
+            // PERBAIKAN PENYIMPANAN SESI: Diselaraskan dengan pembacaan data di Membership.jsx
+            const sessionData = {
+                email: validUser.email,
+                name: validUser.name || "User",
+                role: userRole // Bernilai "Admin" or "Customer"
+            };
+            
+            localStorage.setItem("userLoggedIn", JSON.stringify(sessionData));
+            
+            // Tetap mempertahankan backup key bawaan kelompok kamu agar fitur lain tidak ikut error
             localStorage.setItem("admin_session", "true");
-            localStorage.setItem("user_role", userRole);
+            localStorage.setItem("user_role", userRole.toLowerCase());
             
             // Arahkan langsung ke halaman admin
             navigate("/admin");
