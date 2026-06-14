@@ -49,9 +49,21 @@ const Feedback = () => {
       setCurrentRole("Guest");
     }
 
-    // 2. Ambil data CRM
-    const db = getCRMData();
-    setReviews(db.reviews || []);
+    // 2. Fungsi Ambil data CRM
+    const fetchReviewsData = () => {
+      const db = getCRMData();
+      setReviews(db.reviews || []);
+    };
+
+    // Jalankan sekali di awal
+    fetchReviewsData();
+
+    // SINKRONISASI REAL-TIME: 
+    // Menggunakan interval untuk terus mengecek data baru dari Lumiere Showcase setiap 1 detik
+    const interval = setInterval(fetchReviewsData, 1000);
+
+    // Membersihkan interval saat komponen tidak lagi digunakan
+    return () => clearInterval(interval);
   }, []);
 
   // Auto-focus reply textarea when dialog opens

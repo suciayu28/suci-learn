@@ -21,7 +21,6 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // PERBAIKAN DI SINI: Menggunakan fungsi setter yang benar agar tidak crash
         setLoading(true);
         setError("");
 
@@ -40,7 +39,7 @@ export default function Login() {
                 return;
             }
 
-            // Memastikan penulisan kapitalisasi role sesuai dengan pendaftaran (misal: "Admin" / "Customer")
+            // Memastikan penulisan kapitalisasi role sesuai dengan pendaftaran (misal: "Admin" / "Customer" / "Guest")
             const rawRole = validUser.role || "Customer";
             const userRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
             
@@ -48,7 +47,7 @@ export default function Login() {
             const sessionData = {
                 email: validUser.email,
                 name: validUser.name || "User",
-                role: userRole // Bernilai "Admin" or "Customer"
+                role: userRole 
             };
             
             localStorage.setItem("userLoggedIn", JSON.stringify(sessionData));
@@ -57,8 +56,14 @@ export default function Login() {
             localStorage.setItem("admin_session", "true");
             localStorage.setItem("user_role", userRole.toLowerCase());
             
-            // Arahkan langsung ke halaman admin
-            navigate("/admin");
+            // ================= KONDISI REDIRECT BERDASARKAN APP.JSX =================
+            if (userRole === "Customer" || userRole === "Guest") {
+                // Sesuai App.jsx, LumiereShowcase berada di path "/"
+                navigate("/", { state: { authSuccess: true } });
+            } else {
+                // Jika dia login sebagai Admin, tetap masuk ke Dashboard Admin internal
+                navigate("/admin");
+            }
             
         } catch (err) {
             console.error("Login Error:", err);
