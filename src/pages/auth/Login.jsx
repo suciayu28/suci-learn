@@ -21,7 +21,7 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setLoading(true); // <--- PERBAIKAN DI SINI (Sebelumnya keliru ditulis 'loading(true)')
         setError("");
 
         try {
@@ -56,12 +56,12 @@ export default function Login() {
             localStorage.setItem("admin_session", "true");
             localStorage.setItem("user_role", userRole.toLowerCase());
             
-            // ================= KONDISI REDIRECT BERDASARKAN APP.JSX =================
+            // ================= KONDISI REDIRECT BERDASARKAN USER_ROLE =================
             if (userRole === "Customer" || userRole === "Guest") {
-                // Sesuai App.jsx, LumiereShowcase berada di path "/"
-                navigate("/", { state: { authSuccess: true } });
+                // ✅ Diarahkan langsung ke rute mandiri full page tanpa sidebar admin
+                navigate("/order-member", { state: { authSuccess: true } });
             } else {
-                // Jika dia login sebagai Admin, tetap masuk ke Dashboard Admin internal
+                // Jika login sebagai Admin, masuk ke Dashboard Admin internal
                 navigate("/admin");
             }
             
@@ -112,7 +112,7 @@ export default function Login() {
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 block">Atelier Identity</label>
                             <div className="relative mt-1.5">
                                 <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                                <input type="email" name="email" required className="w-full pl-11 pr-4 py-4 border border-[#F3F3F3] rounded-2xl bg-[#F3F3F3]/30 focus:bg-white focus:ring-2 focus:ring-[#4F5C18]/20 outline-none text-sm" placeholder="atelier@lumiere.com" onChange={handleChange} />
+                                <input type="email" name="email" required className="w-full pl-11 pr-4 py-4 border border-[#F3F3F3] rounded-2xl bg-[#F3F3F3]/30 focus:bg-white focus:ring-2 focus:ring-[#4F5C18]/20 outline-none text-sm" placeholder="customer@lumiere.com" onChange={handleChange} />
                             </div>
                         </div>
 

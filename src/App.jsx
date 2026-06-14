@@ -8,6 +8,9 @@ import Loading from "./components/Loading";
 // Showcase (Landing Page Utama)
 const LumiereShowcase = React.lazy(() => import("./pages/LumiereShowcase"));
 
+// Halaman Baru: Order & Belanja Khusus Member Premium
+const OrderMember = React.lazy(() => import("./pages/OrderMember"));
+
 // Admin & Core Pages (Masing-masing panggil file yang benar)
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const Customers = React.lazy(() => import("./pages/Customers"));
@@ -55,7 +58,9 @@ function App() {
           
           {/* Implementasi Modul 10 & History */}
           <Route path="order-history" element={<OrderHistory />} />
-          <Route path="atelier-lab" element={<LumiereShowcase />} /> 
+          
+          {/* Menjaga kompabilitas nama penanda rute lab */}
+          <Route path="lumiere-lab" element={<LumiereShowcase />} /> 
           
           {/* Orders Management */}
           <Route path="orders" element={<Orders />} />
@@ -97,8 +102,9 @@ function App() {
           />
         </Route>
 
-        {/* 3. CORE AUTHENTICATION AREA (FULL SPLIT SCREEN) */}
-        {/* Mengeluarkan halaman auth ke tingkat atas bebas agar simetris penuh monitor */}
+        {/* 3. CORE AUTHENTICATION & MEMBER STANDALONE AREA (FULL SCREEN) */}
+        {/* Mengeluarkan halaman auth & order-member ke tingkat atas bebas agar simetris penuh monitor */}
+        <Route path="/order-member" element={<OrderMember />} /> {/* ✅ SEKARANG DI SINI (FULL PAGE TANPA SIDEBAR) */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<Forgot />} />
