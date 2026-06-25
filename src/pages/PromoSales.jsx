@@ -19,8 +19,8 @@ import {
   FiImage
 } from "react-icons/fi"; 
 
-// --- IMPORT DATA YANG SUDAH DIPISAHKAN ---
-import { initialPromoProducts, defaultNewProductState } from "../data/promoData";
+// --- IMPORT SUPABASE CLIENT ---
+import { supabase } from "../services/supabaseClient";
 
 const PromoSales = () => {
   // ─── PROTEKSI ROLE & CART STATE ───────────────────────────────────────
@@ -37,6 +37,12 @@ const PromoSales = () => {
   const [editingProduct, setEditingProduct] = useState(null); // Menampung produk yang sedang diedit
 
   // --- STATE FOR NEW/EDIT PRODUCT FORM ---
+  const defaultNewProductState = {
+    title: "",
+    original_price: "",
+    discount_price: "",
+    img_url: ""
+  };
   const [newProduct, setNewProduct] = useState(defaultNewProductState);
 
   const titleInputRef = useRef(null);
@@ -45,6 +51,17 @@ const PromoSales = () => {
   const [promoProducts, setPromoProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [discountFilter, setDiscountFilter] = useState("Semua Polongan Harga");
+
+  // --- FUNGSI UNTUK MENGAMBIL DATA DARI SUPABASE ---
+  const fetchPromoProducts = async () => {
+    const { data, error } = await supabase
+      .from('promo_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) console.error("Error fetching promo products:", error);
+    else setPromoProducts(data);
+  };
 
   // ─── EFFECT: LIFECYCLE DATA MANAGEMENT ───────────────────────────────
   useEffect(() => {
@@ -59,15 +76,8 @@ const PromoSales = () => {
     const savedCart = localStorage.getItem("cartItems");
     if (savedCart) setCart(JSON.parse(savedCart));
 
-    // 3. Ambil Data Produk Promo Berbasis LocalStorage / Initial Data
-    const savedPromoProducts = localStorage.getItem("promoProductsItems");
-    if (savedPromoProducts) {
-      setPromoProducts(JSON.parse(savedPromoProducts));
-    } else {
-      setPromoProducts(initialPromoProducts);
-      localStorage.setItem("promoProductsItems", JSON.stringify(initialPromoProducts));
-    }
-
+    // 3. Ambil data dari Supabase saat komponen pertama kali dimuat
+    fetchPromoProducts();
     // 4. Timer Countdown
     let timer;
     if (isEventLive) {
@@ -92,8 +102,8 @@ const PromoSales = () => {
 
   // Kalkulasi persentase diskon otomatis untuk form
   const calculatedDiscountPercent = () => {
-    const original = parseFloat(newProduct.originalPrice);
-    const discount = parseFloat(newProduct.discountPrice);
+    const original = parseFloat(newProduct.original_price);
+    const discount = parseFloat(newProduct.discount_price);
     if (original && discount && original > discount) {
       return Math.round(((original - discount) / original) * 100);
     }
@@ -111,58 +121,59 @@ const PromoSales = () => {
     setEditingProduct(product);
     setNewProduct({
       title: product.title,
-      originalPrice: product.originalPrice.toString(),
-      discountPrice: product.discountPrice.toString(),
-      img: product.img
+      original_price: product.original_price.toString(),
+      discount_price: product.discount_price.toString(),
+      img_url: product.img_url
     });
     setIsFormOpen(true);
   };
 
-  const handleSaveCatalog = (e) => {
+  const handleSaveCatalog = async (e) => {
     e.preventDefault();
-    if (!newProduct.title || !newProduct.originalPrice || !newProduct.discountPrice) {
+    if (!newProduct.title || !newProduct.original_price || !newProduct.discount_price) {
       alert("Mohon lengkapi nama produk dan harga terlebih dahulu.");
       return;
     }
 
-    const defaultImg = "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=500&q=80";
-    let updatedPromoProducts;
+    const productData = {
+      title: newProduct.title,
+      original_price: parseInt(newProduct.original_price),
+      discount_price: parseInt(newProduct.discount_price),
+      discount_percent: calculatedDiscountPercent(),
+      img_url: newProduct.img_url.trim() !== "" ? newProduct.img_url : "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=500&q=80"
+    };
 
     if (editingProduct) {
       // PROSES EDIT
-      updatedPromoProducts = promoProducts.map((p) => p.id === editingProduct.id ? {
-        ...p,
-        title: newProduct.title,
-        originalPrice: parseInt(newProduct.originalPrice),
-        discountPrice: parseInt(newProduct.discountPrice),
-        discountPercent: calculatedDiscountPercent(),
-        img: newProduct.img.trim() !== "" ? newProduct.img : defaultImg
-      } : p);
+      const { error } = await supabase
+        .from('promo_items')
+        .update(productData)
+        .eq('id', editingProduct.id);
+      if (error) console.error("Error updating product:", error);
     } else {
-      // PROSES TAMBAH BARU
-      const createdProduct = {
-        id: Date.now(),
-        title: newProduct.title,
-        originalPrice: parseInt(newProduct.originalPrice),
-        discountPrice: parseInt(newProduct.discountPrice),
-        discountPercent: calculatedDiscountPercent(),
-        img: newProduct.img.trim() !== "" ? newProduct.img : defaultImg
-      };
-      updatedPromoProducts = [createdProduct, ...promoProducts];
+      // PROSES TAMBAH BARU KE SUPABASE
+      const { error } = await supabase
+        .from('promo_items')
+        .insert([productData]);
+      if (error) console.error("Error creating product:", error);
     }
 
-    setPromoProducts(updatedPromoProducts);
-    localStorage.setItem("promoProductsItems", JSON.stringify(updatedPromoProducts));
+    // Ambil data terbaru dan tutup modal
+    await fetchPromoProducts();
     setNewProduct(defaultNewProductState); 
     setEditingProduct(null);
     setIsFormOpen(false);
   };
 
-  const handleDeletePromo = (id, title) => {
+  const handleDeletePromo = async (id, title) => {
     if (confirm(`Apakah Anda yakin ingin menghapus promo untuk produk "${title}"?`)) {
-      const updatedPromoProducts = promoProducts.filter((p) => p.id !== id);
-      setPromoProducts(updatedPromoProducts);
-      localStorage.setItem("promoProductsItems", JSON.stringify(updatedPromoProducts));
+      const { error } = await supabase
+        .from('promo_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) console.error("Error deleting product:", error);
+      else await fetchPromoProducts(); // Refresh data setelah berhasil hapus
     }
   };
 
@@ -170,7 +181,7 @@ const PromoSales = () => {
   const handleAddToCart = (product) => {
     let updatedCart = [...cart];
     const existingIndex = updatedCart.findIndex((item) => item.id === product.id);
-    const formattedPromoPrice = `Rp ${product.discountPrice.toLocaleString("id-ID")}`;
+    const formattedPromoPrice = `Rp ${product.discount_price.toLocaleString("id-ID")}`;
 
     if (existingIndex > -1) {
       updatedCart[existingIndex].quantity += 1;
@@ -180,7 +191,7 @@ const PromoSales = () => {
         title: product.title,
         price: formattedPromoPrice, 
         tag: "Koleksi Promo",
-        img: product.img,
+        img: product.img_url,
         quantity: 1
       });
     }
@@ -221,15 +232,15 @@ const PromoSales = () => {
   // ─── METRICS CALCULATION ─────────────────────────────────────────────
   const totalItems = promoProducts.length;
   const averageDiscount = totalItems > 0 
-    ? (promoProducts.reduce((sum, p) => sum + p.discountPercent, 0) / totalItems).toFixed(1) 
+    ? (promoProducts.reduce((sum, p) => sum + p.discount_percent, 0) / totalItems).toFixed(1) 
     : 0;
-  const bigDiscountCount = promoProducts.filter(p => p.discountPercent >= 30).length;
+  const bigDiscountCount = promoProducts.filter(p => p.discount_percent >= 30).length;
 
   const filteredProducts = promoProducts.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
-    if (discountFilter === "Diskon Besar (>=30%)") return matchesSearch && product.discountPercent >= 30;
-    if (discountFilter === "Diskon Menengah (20%-29%)") return matchesSearch && product.discountPercent >= 20 && product.discountPercent < 30;
-    if (discountFilter === "Diskon Kecil (<20%)") return matchesSearch && product.discountPercent < 20;
+    if (discountFilter === "Diskon Besar (>=30%)") return matchesSearch && product.discount_percent >= 30;
+    if (discountFilter === "Diskon Menengah (20%-29%)") return matchesSearch && product.discount_percent >= 20 && product.discount_percent < 30;
+    if (discountFilter === "Diskon Kecil (<20%)") return matchesSearch && product.discount_percent < 20;
     return matchesSearch;
   });
 
@@ -315,17 +326,17 @@ const PromoSales = () => {
             <form onSubmit={handleSaveCatalog} className="space-y-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Nama Koleksi Produk</label>
-                <input ref={titleInputRef} required type="text" placeholder="Contoh: Velvet Lip Matte" value={newProduct.title} onChange={(e) => setNewProduct({...newProduct, title: e.target.value})} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
+                <input ref={titleInputRef} required type="text" placeholder="Contoh: Velvet Lip Matte" value={newProduct.title} onChange={(e) => setNewProduct({ ...newProduct, title: e.target.value })} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Harga Awal (Coret)</label>
-                  <input required type="number" placeholder="Contoh: 180000" value={newProduct.originalPrice} onChange={(e) => setNewProduct({...newProduct, originalPrice: e.target.value})} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
+                  <input required type="number" placeholder="Contoh: 180000" value={newProduct.original_price} onChange={(e) => setNewProduct({ ...newProduct, original_price: e.target.value })} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Harga Diskon Efektif</label>
-                  <input required type="number" placeholder="Contoh: 126000" value={newProduct.discountPrice} onChange={(e) => setNewProduct({...newProduct, discountPrice: e.target.value})} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
+                  <input required type="number" placeholder="Contoh: 126000" value={newProduct.discount_price} onChange={(e) => setNewProduct({ ...newProduct, discount_price: e.target.value })} className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-xs font-medium focus:bg-white outline-none" />
                 </div>
               </div>
 
@@ -340,7 +351,7 @@ const PromoSales = () => {
                 <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Tautan Gambar Utama</label>
                 <div className="relative">
                   <FiImage className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="Masukkan URL Gambar..." value={newProduct.img} onChange={(e) => setNewProduct({...newProduct, img: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-xs font-medium focus:bg-white outline-none" />
+                  <input type="text" placeholder="Masukkan URL Gambar..." value={newProduct.img_url} onChange={(e) => setNewProduct({ ...newProduct, img_url: e.target.value })} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-xs font-medium focus:bg-white outline-none" />
                 </div>
               </div>
 
@@ -423,12 +434,12 @@ const PromoSales = () => {
               <div>
                 <div className="relative overflow-hidden rounded-xl mb-4 bg-gray-50 aspect-square">
                   <img 
-                    src={product.img} 
+                    src={product.img_url} 
                     alt={product.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <span className="absolute top-3 right-3 bg-rose-500 text-white font-mono text-[9px] font-bold px-2.5 py-0.5 rounded shadow-xs">
-                    {product.discountPercent}% OFF
+                    {product.discount_percent}% OFF
                   </span>
                 </div>
 
@@ -438,10 +449,10 @@ const PromoSales = () => {
                   </h4>
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <span className="text-[11px] text-gray-300 line-through font-medium">
-                      {formatIDR(product.originalPrice)}
+                      {formatIDR(product.original_price)}
                     </span>
                     <span className="text-xs text-[#4F5C18] font-bold">
-                      {formatIDR(product.discountPrice)}
+                      {formatIDR(product.discount_price)}
                     </span>
                   </div>
                 </div>
@@ -513,7 +524,7 @@ const PromoSales = () => {
               <div className="overflow-y-auto max-h-[38vh] space-y-3 pr-1">
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 bg-[#F3F3F3] p-3 rounded-xl">
-                    <img src={item.img} alt={item.title} className="w-12 h-12 object-cover rounded-lg" />
+                    <img src={item.img_url} alt={item.title} className="w-12 h-12 object-cover rounded-lg" />
                     <div className="flex-grow">
                       <h5 className="font-bold text-xs text-[#262626] line-clamp-1">{item.title}</h5>
                       <span className="text-[9px] bg-white text-[#4F5C18] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm mt-0.5 inline-block">{item.tag}</span>

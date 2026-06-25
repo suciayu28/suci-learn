@@ -1,75 +1,63 @@
-import axios from 'axios'
+import { createClient } from '@supabase/supabase-js';
 
-const API_URL = "https://kxhxoltfjedlzqtljkfs.supabase.co/rest/v1/login"
-const API_KEY = "sb_publishable_AbEQ5p5obbAPGWaFtaJ-7Q_wYqPROX_"
+// Ambil URL dan Anon Key dari environment variables
+// Penting: Jangan pernah menaruh key rahasia (service_role) di sisi client.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const headers = {
-    apikey: API_KEY,
-    Authorization: `Bearer ${API_KEY}`,
-    "Content-Type": "application/json",
+// Validasi bahwa environment variables sudah diatur
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Supabase URL and Anon Key must be defined in .env file");
 }
 
-// 1. Kebutuhan manajemen data notes/tabel utama
-export const notesAPI = {
-    async fetchNotes() {
-        const response = await axios.get(API_URL, { headers })
-        return response.data
-    },
-    async createNote(data) {
-        const response = await axios.post(API_URL, data, { headers })
-        return response.data
-    }
-} 
+// Inisialisasi Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// 2. Khusus untuk pendaftaran user baru
+/**
+ * CONTOH PENGGUNAAN (Nantinya akan menggantikan logika di Login.jsx, dll)
+ *
+ * Ini adalah contoh API Layer yang bisa Anda bangun di atas Supabase client.
+ * Memisahkan logika query dari komponen UI adalah praktik yang sangat baik.
+ */
+
+// Contoh fungsi untuk login
 export const authAPI = {
-    async registerUser(data) {
-        const response = await axios.post(API_URL, data, { headers })
-        return response.data
-    }
-}
+  async signIn({ email, password }) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  },
 
-// 3. Fitur CRUD Admin User
-export const userAPI = {
-    async fetchUsers() {
-        const response = await axios.get(API_URL, { headers })
-        return response.data
-    },
-    async createUser(data) {
-        const response = await axios.post(API_URL, data, { headers })
-        return response.data
-    },
-    async deleteUser(id) {
-        const response = await axios.delete(`${API_URL}?id=eq.${id}`, { headers })
-        return response.data
-    }
-}
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
 
-// ==========================================
-// PENGAMAN CRASH: Export default objek tiruan
-// ==========================================
-const supabase = {
-    auth: {
-        signInWithPassword: async ({ email, password }) => {
-            const response = await axios.get(API_URL, { headers });
-            const user = response.data.find(u => u.email === email && u.password === password);
-            if (!user) throw new Error("Atelier Identity atau Secret Key salah!");
-            
-            // PERBAIKAN: Pastikan data role bawaan dari database ikut dikirim keluar 
-            // agar file Login/Membership tahu dia Admin atau Customer
-            return { 
-                data: { 
-                    user: {
-                        email: user.email,
-                        role: user.role // Menangkap field role ("Admin" / "Customer") dari Supabase
-                    } 
-                }, 
-                error: null 
-            };
-        }
-    }
+  async getUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  },
+  
+  onAuthStateChange(callback) {
+    return supabase.auth.onAuthStateChanged(callback);
+  }
 };
 
-// Double Export agar aman dipanggil via import default maupun destructuring { supabase }
-export { supabase }; 
-export default supabase;
+// Contoh fungsi untuk mengambil data profil
+export const profileAPI = {
+  async getProfile(userId) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single(); // .single() untuk mengambil satu baris data
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ... Anda bisa menambahkan API untuk products, orders, dll. di sini

@@ -1,11 +1,12 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MdOutlineDownloading } from "react-icons/md";
 import { GiTerror } from "react-icons/gi";
 import { FiEye, FiEyeOff, FiUser, FiShield, FiMail, FiLock } from "react-icons/fi"; 
 
-// PERBAIKAN DI SINI: Mengimpor authAPI berbasis Axios dari file client Anda
-import { authAPI } from "../../services/supabaseClient"; 
+// Mengimpor Supabase client yang sudah benar
+import { supabase } from "../../services/supabaseClient"; 
 
 export default function Register() {
     const navigate = useNavigate();
@@ -35,21 +36,25 @@ export default function Register() {
         }
 
         try {
-            await authAPI.registerUser({
-                email: dataForm.email,
-                password: dataForm.password,
-                role: dataForm.role,
-                name: dataForm.email.split("@")[0]
-            });
+            // Insert data user baru secara manual ke tabel 'login'
+            const { error } = await supabase
+                .from('login')
+                .insert([
+                    { 
+                        email: dataForm.email, 
+                        password: dataForm.password, 
+                        name: dataForm.email.split('@')[0], 
+                        role: dataForm.role 
+                    }
+                ]);
+
+            if (error) throw error;
 
             setSuccess("Account Atelier Berhasil Dibuat! Silakan Login.");
             setTimeout(() => navigate("/login"), 2000);
         } catch (registerError) {
             console.error("Register Error:", registerError);
-            setError(
-                registerError.response?.data?.message || 
-                "Gagal melakukan registrasi ke database Atelier!"
-            );
+            setError(registerError.message || "Gagal melakukan registrasi ke database Atelier!");
         } finally {
             setLoading(false);
         }
@@ -81,7 +86,15 @@ export default function Register() {
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Email Address</label>
                             <div className="relative mt-1.5">
                                 <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="email" name="email" required onChange={handleChange} className="w-full pl-11 pr-4 py-4 border border-[#F3F3F3] rounded-2xl bg-[#F3F3F3]/30 text-sm" placeholder="customer@lumiere.com" />
+                                <input 
+                                    type="email" 
+                                    name="email" 
+                                    required 
+                                    onChange={handleChange} 
+                                    className="w-full pl-11 pr-4 py-4 border border-[#F3F3F3] rounded-2xl bg-[#F3F3F3]/30 text-sm"
+                                    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                                    placeholder="customer@lumiere.com"
+                                />
                             </div>
                         </div>
 

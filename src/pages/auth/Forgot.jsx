@@ -1,8 +1,37 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import { FiMail } from "react-icons/fi";
+import { MdOutlineDownloading } from "react-icons/md";
+import { supabase } from "../../services/supabaseClient";
 
 export default function Forgot() {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [email, setEmail] = useState("");
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/password-reset`, // Halaman untuk reset password baru
+            });
+
+            if (error) throw error;
+
+            setSuccess("Tautan pemulihan telah dikirim ke email Anda. Silakan periksa kotak masuk.");
+        } catch (err) {
+            setError(err.message || "Gagal mengirim tautan pemulihan.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#F9F9F9] font-poppins text-[#262626] antialiased">
             
@@ -53,11 +82,18 @@ export default function Forgot() {
                         </p>
                     </div>
 
+                    {error && (
+                        <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-[10px] font-black uppercase tracking-wider mb-6 text-center">{error}</div>
+                    )}
+                    {success && (
+                        <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl text-[10px] font-black uppercase tracking-wider mb-6 text-center">{success}</div>
+                    )}
+
                     <p className="text-[11px] text-gray-400 mb-6 text-center leading-relaxed px-4 font-medium">
                         Enter your email address and we'll send you a link to reset your password securely.
                     </p>
 
-                    <form className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label htmlFor="email" className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 block">
                                 Email Address
@@ -69,17 +105,19 @@ export default function Forgot() {
                                     id="email"
                                     className="w-full pl-11 pr-4 py-4 border border-[#F3F3F3] rounded-2xl bg-[#F3F3F3]/30 focus:bg-white focus:ring-2 focus:ring-[#4F5C18]/20 outline-none transition-all text-sm"
                                     placeholder="you@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
                                 />
                             </div>
                         </div>
 
                         <button
                             type="submit"
-                            className="w-full bg-[#262626] hover:bg-[#4F5C18] text-white font-black py-4 px-6 
-                                rounded-full shadow-xl shadow-[#262626]/10 transition-all transform active:scale-95
-                                text-[10px] uppercase tracking-[0.4em] flex items-center justify-center cursor-pointer mt-2"
+                            disabled={loading}
+                            className="w-full bg-[#262626] hover:bg-[#4F5C18] text-white font-black py-4 px-6 rounded-full shadow-xl shadow-[#262626]/10 transition-all transform active:scale-95 text-[10px] uppercase tracking-[0.4em] flex items-center justify-center cursor-pointer mt-2 disabled:bg-gray-400"
                         >
-                            Send Reset Link
+                            {loading ? <MdOutlineDownloading className="animate-spin text-lg" /> : "Send Reset Link"}
                         </button>
                     </form>
 

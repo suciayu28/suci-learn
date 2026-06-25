@@ -1,11 +1,12 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MdOutlineDownloading } from "react-icons/md";
 import { GiTerror } from "react-icons/gi";
 import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi"; 
 
-// Mengimpor userAPI berbasis Axios dari file client kamu
-import { userAPI } from "../../services/supabaseClient"; 
+// Mengimpor authAPI dan profileAPI dari Supabase client yang sudah benar
+import { authAPI, supabase } from "../../services/supabaseClient"; 
 
 export default function Login() {
     const navigate = useNavigate();
@@ -21,53 +22,46 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true); // <--- PERBAIKAN DI SINI (Sebelumnya keliru ditulis 'loading(true)')
+        setLoading(true);
         setError("");
 
         try {
-            // Mengambil daftar user dari endpoint REST API Supabase via Axios
-            const users = await userAPI.fetchUsers();
-            
-            // Mencari user yang email dan password-nya cocok
-            const validUser = users.find(
-                (user) => user.email === dataForm.email && user.password === dataForm.password
-            );
+            // Mengambil data dari tabel 'login' berdasarkan email dan password
+            const { data: user, error } = await supabase
+                .from('login')
+                .select('*')
+                .eq('email', dataForm.email)
+                .eq('password', dataForm.password)
+                .maybeSingle();
 
-            if (!validUser) {
-                setError("Atelier Identity atau Secret Key salah!");
-                setLoading(false);
-                return;
-            }
+            if (error) throw error;
+            if (!user) throw new Error("Atelier Identity atau Secret Key salah!");
 
-            // Memastikan penulisan kapitalisasi role sesuai dengan pendaftaran (misal: "Admin" / "Customer" / "Guest")
-            const rawRole = validUser.role || "Customer";
+            const rawRole = user.role || "Customer";
+            const fullName = user.name || user.email.split("@")[0];
+
+            // Memastikan penulisan kapitalisasi role
             const userRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
-            
-            // PERBAIKAN PENYIMPANAN SESI: Diselaraskan dengan pembacaan data di Membership.jsx
+
+            // Menyimpan data sesi yang relevan ke localStorage
             const sessionData = {
-                email: validUser.email,
-                name: validUser.name || "User",
+                email: user.email,
+                name: fullName,
                 role: userRole 
             };
-            
             localStorage.setItem("userLoggedIn", JSON.stringify(sessionData));
-            
-            // Tetap mempertahankan backup key bawaan kelompok kamu agar fitur lain tidak ikut error
-            localStorage.setItem("admin_session", "true");
-            localStorage.setItem("user_role", userRole.toLowerCase());
-            
-            // ================= KONDISI REDIRECT BERDASARKAN USER_ROLE =================
-            if (userRole === "Customer" || userRole === "Guest") {
-                // ✅ Diarahkan langsung ke rute mandiri full page tanpa sidebar admin
-                navigate("/order-member", { state: { authSuccess: true } });
-            } else {
-                // Jika login sebagai Admin, masuk ke Dashboard Admin internal
+
+            // Redirect berdasarkan role dari profil
+            if (userRole === "Admin") {
                 navigate("/admin");
+            } else {
+                // Semua role selain Admin (Customer, Guest, dll) diarahkan ke halaman order member
+                navigate("/order-member", { state: { authSuccess: true } });
             }
             
         } catch (err) {
             console.error("Login Error:", err);
-            setError("Gagal terhubung ke server database Atelier.");
+            setError(err.message || "Atelier Identity atau Secret Key salah!");
         } finally {
             setLoading(false);
         }
@@ -127,7 +121,7 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <button type="submit" disabled={loading} className="w-full bg-[#262626] hover:bg-[#4F5C18] text-white font-black py-4 rounded-full text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-3 mt-2">
+                        <button type="submit" disabled={loading} className="w-full bg-[#262626] hover:bg-[#4F5C18] text-white font-black py-4 rounded-full text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-3 mt-2 disabled:bg-gray-400">
                             {loading ? <MdOutlineDownloading className="animate-spin text-lg" /> : "Login to Dashboard"}
                         </button>
                     </form>

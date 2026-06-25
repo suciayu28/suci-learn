@@ -1,0 +1,387 @@
+# PROMPT PEMBUATAN LANDING PAGE CRM LUMIER COSMETICS + PRD V1, V2, V3
+
+Bertindak sebagai Senior Product Manager, Product Owner, Business Analyst, CRM Consultant, UI/UX Designer, dan Frontend Architect.
+
+Buat dokumen teknis mendalam yang berisi evolusi Product Requirement Document (PRD) mulai dari versi awal hingga versi lengkap untuk Landing Page CRM Lumier Cosmetics.
+
+Landing Page harus mengikuti standar SaaS modern dan terikat langsung (data-bound) dengan struktur database internal dari sistem CRM industri kosmetik & kecantikan yang sudah dibangun.
+
+---
+
+# DATA INTI CRM (DATABASE CUSTOM FIELDS YANG WAJIB DIINTEGRASIKAN)
+
+## Data Identitas Customer
+* Customer ID (UUID - Primary Key)
+* Nama Lengkap
+* Username / Nickname
+* Jenis Kelamin (Laki-laki / Perempuan)
+* Tanggal Lahir (Trigger Birthday Promo)
+
+## Kontak
+* Nomor HP (Integrasi WhatsApp Gateway)
+* Email (Notifikasi Sistem / Email Marketing)
+* Kota / Provinsi (Segmentasi Wilayah Penjualan)
+
+## Data Akun / Membership
+* Tanggal Daftar
+* Status Member
+* Level Membership (Bronze, Silver, Gold - Skema Diskon & Reward Bertingkat)
+* Creator Code / Referral Code (Sistem Keagenan, Afiliasi, & Influencer Tracking)
+* Status Aktif atau Tidak (Boolean Control)
+
+## Riwayat Interaksi
+* Feedback / Review (Data Ulasan Efikasi Produk & Kepuasan Layanan)
+
+## Data Transaksi
+* Total Transaksi (Customer Lifetime Value)
+* Produk yang Dibeli (JSONB - Contoh: Serum, Lipcream, Cushion, Foundation, dll.)
+* Metode Pembayaran (Payment Gateway / Bank Transfer)
+* Tanggal Transaksi Terakhir (Trigger Restock Alert Otomatis)
+
+## Marketing & Engagement
+* Sumber User (Instagram, TikTok, Referral, Website - Jalur Atribusi Kampanye)
+* Status Promo (Aktif / Tidak Aktif - Otomatisasi Push Notification)
+
+---
+
+# INFORMASI PROJECT
+
+Nama Project:
+Lumier Cosmetics CRM
+
+Jenis Sistem:
+B2B & D2C Customer Relationship Management (CRM) untuk Brand Kosmetik, Skincare, Distributor Kecantikan, dan Jaringan Agen/Reseller.
+
+Teknologi:
+* React
+* Vite
+* Tailwind CSS
+* Supabase
+* React Hooks
+* Shadcn UI
+* Recharts
+
+---
+
+# TUJUAN LANDING PAGE
+
+Landing Page digunakan untuk:
+* Memperkenalkan Lumier Cosmetics CRM kepada pemilik brand kecantikan dan jaringan distributor.
+* Menarik calon mitra, reseller, dan pemilik toko kosmetik untuk menggunakan platform.
+* Menjelaskan bagaimana sistem mengotomatisasi pencatatan data transaksi dan keagenan.
+* Menghasilkan lead baru, meningkatkan registrasi free trial, dan booking demo sistem.
+
+Landing Page harus mengikuti:
+* AIDA Framework (Attention, Interest, Desire, Action)
+* Conversion-Oriented Design
+* Modern SaaS Aesthetic (Clean, Luxury, & Professional)
+* Mobile First & Responsive Design
+
+---
+
+# TENTANG LUMIER COSMETICS CRM
+
+Lumier Cosmetics CRM adalah sistem manajemen hubungan pelanggan khusus industri kecantikan yang membantu bisnis kosmetik mengelola identitas customer, memetakan jaringan reseller lewat kode referral, melacak level membership (Bronze, Silver, Gold), menganalisis produk kosmetik terlaris, serta mengotomatisasi pengingat pembelian ulang (restock alert) berdasarkan tanggal transaksi terakhir pelanggan.
+
+---
+
+# PRD V1 – BASIC VERSION
+
+## Product Goal
+Memperkenalkan eksistensi Lumier Cosmetics CRM kepada pelaku bisnis kecantikan dan menangkap minat pendaftaran awal (lead acquisition).
+
+## Target User
+* Owner Brand Kosmetik Lokal
+* Distributor Utama Skincare
+* Jaringan Agen & Reseller Kosmetik
+* Toko Kosmetik Retail / Salon Kecantikan
+
+## Landing Page Structure
+### Navbar
+* Logo Lumier Cosmetics CRM
+* Home
+* Features
+* Pricing
+* Contact
+* Login (Supabase Auth)
+
+### Hero Section
+Headline:
+Kelola Bisnis Kosmetik Lebih Mudah dengan Lumier Cosmetics CRM
+
+Subheadline:
+Satukan data identitas pelanggan, level membership, kode referral reseller, dan riwayat transaksi kecantikan dalam satu platform SaaS modern.
+
+CTA:
+* Mulai Gratis
+* Lihat Demo
+
+### Features Section
+Tampilkan:
+* Customer Identity Management
+* Contact & Geo-Tracking
+* Basic Membership Tiers
+* Transaction History Logs
+
+### Footer
+* Kontak
+* Email Support
+* Social Media
+* Copyright
+
+## Success Metrics
+* Visitor
+* CTA Click
+* Bounce Rate
+
+---
+
+# PRD V2 – INTERMEDIATE VERSION
+
+Kembangkan seluruh V1 menjadi lebih lengkap, interaktif, mengatasi friksi pengguna, dan menampilkan visualisasi produk.
+
+## Business Goals
+* Meningkatkan trial user hingga 35%
+* Meningkatkan demo booking otomatis bagi klien korporat/distributor besar
+* Meningkatkan konversi pelanggan dan awareness Lumier Cosmetics CRM
+* Membangun social proof untuk meningkatkan kepercayaan
+
+## User Persona
+
+### Persona 1
+Owner Brand Kosmetik
+Pain Points:
+* Data konsumen tersebar di banyak reseller
+* Sulit mengukur efektivitas Creator Code / Referral Code influencer
+* Pelacakan omset tidak terpusat
+
+### Persona 2
+Manajer Penjualan / Marketing
+Pain Points:
+* Tidak tahu kapan kosmetik/skincare konsumen akan habis pakai
+* Promosi sering tidak tepat sasaran dan tidak menghasilkan repeat order
+
+### Persona 3
+Agen & Reseller Kecantikan
+Pain Points:
+* Sulit memantau perpindahan level membership mereka (Bronze/Silver/Gold)
+* Proses klaim bonus komisi dari kode referral sering terjadi salah hitung
+
+## TOP SECTION
+### Sticky Navbar
+* Home
+* Features
+* CRM Solution
+* Pricing
+* Contact
+* Login
+* Sign Up
+
+### Hero Section
+Headline:
+CRM Modern untuk Bisnis Kosmetik Masa Kini
+
+Subheadline:
+Tingkatkan repeat order produk kecantikan Anda dengan sistem manajemen pelanggan dan keagenan terintegrasi.
+
+CTA:
+* Mulai Gratis
+* Jadwalkan Demo
+
+### Dashboard Preview
+Tampilkan mockup dashboard aplikasi asli Lumier Cosmetics CRM.
+
+### Social Proof
+* Total Active Customer
+* Total Products Sold
+* Total Active Referral Code
+* Jaringan Toko Kosmetik Mitra
+
+## MIDDLE SECTION
+### Problem Section
+Masalah yang sering dialami bisnis kecantikan:
+* Excel pencatatan yang berantakan dan data pembeli tidak terpusat
+* Buta peta wilayah sebaran agen dan data kontak geografis konsumen
+* Perhitungan bonus komisi reseller macet dan tidak transparan
+* Sulit menjaga loyalitas pelanggan sehingga churn rate tinggi
+
+### Solution Section
+Bagaimana Lumier Cosmetics CRM menyelesaikan masalah tersebut lewat integrasi data otomatis.
+
+### CRM Features
+Minimal 8 fitur utama:
+* Customer 360 View: Profiling identitas lengkap konsumen, jenis kelamin, dan tanggal lahir.
+* Geo-Contact Filter: Penyaringan database kontak berdasarkan Kota/Provinsi untuk ketepatan logistik.
+* Tiered Membership: Otomatisasi pembagian keuntungan level Bronze, Silver, dan Gold.
+* Referral & Creator Engine: Pelacakan performa penjualan real-time berbasis kode afiliasi.
+* Transaction Ledger: Rekap Total Transaksi, item kosmetik yang dibeli, dan metode pembayaran.
+* Restock Alert System: Otomatisasi pengingat belanja ulang skincare/kosmetik berdasarkan tanggal transaksi terakhir.
+* Review & Feedback Hub: Pengumpulan ulasan efikasi produk dan sentimen analisis kepuasan.
+* Performance Analytics: Dashboard visualisasi KPI pendapatan, tren item terpopuler, dan grafik saluran pemasaran.
+
+### Benefits Section
+* Efisiensi Operasional Reseller & Admin Gudang
+* Peningkatan Customer Retention Rate (Repeat Order)
+* Pelacakan Komisi Afiliasi Lebih Akurat dan Transparan
+* Personalisasi Promo Berdasarkan Data Demografi & Tanggal Lahir
+
+### Testimonials
+Minimal 3 Testimonial dari owner brand kecantikan mandiri / distributor sukses.
+
+### FAQ
+Minimal 10 pertanyaan modular seputar sistem CRM kosmetik.
+
+## BOTTOM SECTION
+### CTA
+Headline:
+Siap Melejitkan Omset Brand Kosmetik Anda?
+
+Button:
+* Mulai Gratis
+* Jadwalkan Demo
+
+### Footer
+* Navigation
+* Contact
+* Social Media
+* Terms of Service
+* Privacy Policy
+
+---
+
+# PRD V3 – COMPLETE VERSION
+
+## Product Vision
+Menjadi platform SaaS tata kelola hubungan pelanggan kosmetik terdepan di Asia Tenggara yang mendorong pertumbuhan bisnis kecantikan lewat kekuatan data analitik prediktif dan otomatisasi kampanye pemasaran omni-channel.
+
+## USER JOURNEY
+Visitor → Landing Page → Feature Exploration → Demo Request → Free Trial Onboarding → Database Sync via Supabase → Active Dashboard CRM Usage → Reseller/Customer Retention Automation → Subscription Plan Upgrade.
+
+## INFORMATION ARCHITECTURE
+### TOP
+* Navbar
+* Hero Block
+* Dashboard Visual Engine (Mockup Preview)
+* Trust Indicators
+* Live Database Counter (Social Proof)
+
+### MIDDLE
+* Industry Pain Points (Problem Block)
+* Automation Solution Block
+* CRM Live Workflow Pipeline
+* 4-Dimensional Feature Grid
+* Customer Journey Framework
+* Third-Party Integrations Showcase
+* Reseller Case Study Breakdown
+* Testimonials Carousel
+* FAQ Accordion System
+
+### BOTTOM
+* Final Conversion CTA Block
+* Lead Newsletter Capture Form (With Marketing Source Tracking)
+* Contact Information
+* Footprint Sitemaps
+
+---
+
+# CRM FEATURES YANG HARUS DITAMPILKAN (4 PILAR UTAMA)
+
+## Operational CRM
+* Input otomatis data identitas customer baru
+* Perekaman data transaksi kasir/e-commerce
+* Manajemen database nomor HP & Email
+* Input referral code saat checkout produk
+
+## Analytical CRM
+* Recharts Analytics Engine untuk grafik perbandingan total transaksi
+* Performa Atribusi Sumber User (TikTok vs Instagram vs Website)
+* Diagram sebaran demografi wilayah kota/provinsi pembeli terbesar
+
+## Collaborative CRM
+* Modul pengolahan otomatis Feedback / Review produk dari pembeli
+* Delegasi komplain pelanggan langsung ke tim CS
+* Notifikasi sistem untuk pembaruan status pengiriman
+
+## Strategic CRM
+* Algoritma retensi pelanggan berbasis Tanggal Transaksi Terakhir (Trigger otomatis restock alert)
+* Otomatisasi distribusi kupon diskon (Status Promo Aktif) bagi pengguna pasif
+* Program loyalitas eksklusif untuk level membership premium (Gold Level)
+
+---
+
+# USER FLOW (COSMETICS RETAIL SIKLUS)
+Customer Discovered (IG/TikTok) → Masuk Website via Referral Code → Registrasi Akun → Transaksi Produk Kosmetik Pertama → Tersimpan di Database (Customer ID Generated) → Berikan Feedback/Review Bintang 5 → Akumulasi Total Transaksi Meningkat → Otomatis Naik Level Membership (Bronze ke Silver/Gold) → Terotomatisasi Kampanye Promo Berkelanjutan → Menjadi Pelanggan Setia (Loyal Repeat Buyer).
+
+---
+
+# INTEGRATION SECTION
+Tampilkan komponen visual integrasi dengan:
+* Supabase Serverless DB
+* WhatsApp Gateway Engine (Untuk Blast Nomer HP)
+* Email Automation Server
+* Google Calendar Sales Scheduler
+* Local Payment Gateway (Midtrans/Xendit)
+
+---
+
+# UI/UX REQUIREMENTS
+Style:
+* Modern SaaS Style
+* Luxury, Elegant, & Clean Cosmetics Theme
+* Highly Professional Layout
+* High Contrast Design
+
+Color Palette:
+* Primary Deep Pink/Rose (`#9d174d`)
+* Secondary Luxury Magenta (`#c026d3`)
+* Soft Lavender accents
+* White & Clean Backgrounds
+
+Typography:
+* Poppins (Untuk headings yang tegas & elegan)
+* Inter (Untuk teks isi/body text agar mudah dibaca di layar HP)
+
+---
+
+# DASHBOARD PREVIEW
+Mockup harus menampilkan visual komponen grafik dinamis:
+* Grafik Total Pendapatan Bulanan (Total Transaksi Area Chart)
+* Donut Chart Distribusi Level Membership (Bronze vs Silver vs Gold)
+* Tabel Riwayat Aktivitas Transaksi Terkini Pelanggan
+* Bar Chart Atribusi Sumber Pemasaran (TikTok vs Instagram vs Website)
+
+---
+
+# KPI DASHBOARD METRICS
+Awareness:
+* Unique Visitors
+* Traffic Impressions
+* Social Ad CTR
+
+Engagement:
+* Average Time on Page
+* Page Scroll Depth (Target Pricing Area)
+
+Conversion:
+* Trial Registration Rate
+* Request Demo Forms Submitted
+
+Revenue:
+* Month-over-Month Subscription Growth
+* MRR (Monthly Recurring Revenue)
+
+---
+
+# DELIVERABLES OUTPUT REQUIREMENT
+
+Hasilkan satu dokumen output final super lengkap secara formal dan profesional tanpa ada bagian yang terpotong sedikit pun. Dokumen wajib berisi:
+1. Executive Summary komprehensif.
+2. Spesifikasi Tabel Skema Data Inti CRM Kosmetik yang menghubungkan seluruh custom fields bawaan di atas.
+3. Penjabaran lengkap konten teks Landing Page mengikuti struktur PRD V1, V2, dan V3 secara kronologis.
+4. Deskripsi tekstual terperinci untuk komponen arsitektur visual: Sitemap halaman, User Conversion Flow diagram, dan CRM Workflow Pipeline integration.
+5. Panduan teknis arsitektur kode frontend yang mendikte implementasi komponen UI (React & Shadcn UI Layout) beserta implementasi grafik data (Recharts Engine).
+6. Landing Page Copywriting Matrix komprehensif berbasis AIDA Framework.
+7. Implementasi utuh 10 pertanyaan beserta jawaban pada sistem FAQ Accordion.
+8. Definisi formula kalkulasi matriks keberhasilan pada KPI Dashboard.
+
+Seluruh output dokumen harus ditulis secara mendalam, ekspansif, dan siap digunakan oleh UI/UX Designer, Frontend Developer, Product Manager, dan Stakeholder Project.
