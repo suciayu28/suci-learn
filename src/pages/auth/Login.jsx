@@ -113,6 +113,7 @@ export default function Login() {
                         <div>
                             <div className="flex justify-between items-center ml-1">
                                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Secret Key</label>
+                                <Link to="/forgot" className="text-[9px] font-bold text-[#4F5C18] hover:underline transition-colors">Forgot Password?</Link>
                             </div>
                             <div className="relative mt-1.5">
                                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />

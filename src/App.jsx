@@ -34,6 +34,9 @@ const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
 const Forgot = React.lazy(() => import("./pages/auth/Forgot"));
 
+// Debug & Utilities
+const SupabaseDebugger = React.lazy(() => import("./pages/SupabaseDebugger"));
+
 // Error & Layouts
 const ErrorPage = React.lazy(() => import("./pages/NotFound"));
 const MainLayout = React.lazy(() => import("./layouts/MainLayout.jsx"));
@@ -108,6 +111,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<Forgot />} />
+        <Route path="/debug" element={<SupabaseDebugger />} />
 
       </Routes>
     </Suspense>

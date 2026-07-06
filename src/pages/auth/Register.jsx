@@ -35,9 +35,29 @@ export default function Register() {
             return;
         }
 
+        console.log("🔄 Starting register process...", dataForm);
+
         try {
-            // Insert data user baru secara manual ke tabel 'login'
-            const { error } = await supabase
+            // 1. Cek apakah email sudah ada
+            console.log("📝 Checking if email exists...");
+            const { data: existingUser, error: checkError } = await supabase
+                .from('login')
+                .select('id, email')
+                .eq('email', dataForm.email)
+                .maybeSingle();
+
+            if (checkError) {
+                console.error("❌ Check email error:", checkError);
+                throw new Error(`Gagal cek email: ${checkError.message}`);
+            }
+
+            if (existingUser) {
+                throw new Error("Email ini sudah terdaftar! Silakan gunakan email lain.");
+            }
+
+            // 2. Insert data user baru ke tabel 'login'
+            console.log("📝 Inserting user data...");
+            const { data: insertedUser, error: insertError } = await supabase
                 .from('login')
                 .insert([
                     { 
@@ -46,15 +66,31 @@ export default function Register() {
                         name: dataForm.email.split('@')[0], 
                         role: dataForm.role 
                     }
-                ]);
+                ])
+                .select(); // Tambahkan .select() untuk mendapatkan data yang diinsert
 
-            if (error) throw error;
+            if (insertError) {
+                console.error("❌ Insert error:", insertError);
+                throw new Error(`Gagal insert ke database: ${insertError.message} (Code: ${insertError.code})`);
+            }
+
+            console.log("✅ User inserted successfully:", insertedUser);
 
             setSuccess("Account Atelier Berhasil Dibuat! Silakan Login.");
             setTimeout(() => navigate("/login"), 2000);
+
         } catch (registerError) {
-            console.error("Register Error:", registerError);
-            setError(registerError.message || "Gagal melakukan registrasi ke database Atelier!");
+            console.error("❌ Register Error (full):", registerError);
+            
+            let errorMessage = registerError.message;
+            
+            if (registerError.code === 'PGRST301' || registerError.message?.includes('RLS')) {
+                errorMessage = "Kebijakan keamanan Supabase memblokir. Buka /debug dan jalankan test!";
+            } else if (registerError.message?.includes('duplicate')) {
+                errorMessage = "Email ini sudah terdaftar!";
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -78,7 +114,16 @@ export default function Register() {
                 <div className="w-full max-w-md bg-white rounded-[2.5rem] border border-[#F3F3F3] p-8 shadow-sm">
                     <h2 className="text-2xl font-['Playfair_Display'] italic text-center text-[#262626]">Create Account</h2>
                     
-                    {error && <div className="bg-[#BC2F32]/5 text-[#BC2F32] p-4 rounded-2xl text-[10px] font-black uppercase mt-4">{error}</div>}
+                    {error && (
+                        <div className="bg-[#BC2F32]/5 text-[#BC2F32] p-4 rounded-2xl text-[10px] font-black uppercase mt-4">
+                            <div>{error}</div>
+                            {error.includes('RLS') && (
+                                <a href="/debug" className="underline text-xs font-normal mt-2 inline-block">
+                                    → Buka Halaman Debug
+                                </a>
+                            )}
+                        </div>
+                    )}
                     {success && <div className="bg-emerald-500/5 text-emerald-600 p-4 rounded-2xl text-[10px] font-black uppercase mt-4">{success}</div>}
 
                     <form onSubmit={handleSubmit} className="space-y-4 mt-6">
