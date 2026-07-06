@@ -12,6 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { getCRMData, saveCRMData } from "../lib/crmData";
+import { supabase } from "../services/supabaseClient";
 
 // Ambil data yang sudah dipisah dari folder data
 import { 
@@ -21,6 +22,63 @@ import {
   MEMBERSHIP_STATUSES, 
   GENDERS 
 } from "../data/customerData";
+
+// Helper Mappings
+const mapDbToUiCustomer = (dbCust) => {
+  if (!dbCust) return null;
+  return {
+    id: dbCust.id, // UUID
+    name: dbCust.full_name,
+    username: dbCust.username,
+    email: dbCust.email,
+    phone: dbCust.phone || '',
+    gender: dbCust.gender || 'Perempuan',
+    dob: dbCust.date_of_birth || '',
+    city: dbCust.city || '',
+    joinDate: dbCust.join_date ? new Date(dbCust.join_date).toLocaleDateString("id-ID") : new Date().toLocaleDateString("id-ID"),
+    status: dbCust.membership_status || 'Active',
+    loyalty: dbCust.loyalty_tier || 'Bronze',
+    referralCode: dbCust.referral_code || '',
+    feedback: null,
+    totalTransactions: parseFloat(dbCust.total_spent || 0),
+    itemsCount: parseInt(dbCust.total_transactions || 0),
+    paymentMethod: "Virtual Account",
+    lastTransactionDate: dbCust.last_transaction_date ? new Date(dbCust.last_transaction_date).toLocaleDateString("id-ID") : new Date().toLocaleDateString("id-ID"),
+    source: dbCust.source || 'Website',
+    promoActive: dbCust.promo_active || false
+  };
+};
+
+const mapUiToDbCustomer = (uiCust) => {
+  // Auto-generate username kalau kosong (wajib UNIQUE di DB)
+  const autoUsername = uiCust.username && uiCust.username.trim() !== ""
+    ? uiCust.username.trim().toLowerCase().replace(/\s+/g, '_')
+    : (uiCust.name || 'user').toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString().slice(-6);
+
+  // Auto-generate referral code kalau kosong
+  const autoReferral = uiCust.referralCode && uiCust.referralCode.trim() !== ""
+    ? uiCust.referralCode.trim()
+    : null; // null OK karena tidak required
+
+  return {
+    full_name: uiCust.name,
+    username: autoUsername,
+    email: uiCust.email,
+    phone: uiCust.phone || null,
+    gender: uiCust.gender || null,
+    date_of_birth: uiCust.dob ? uiCust.dob : null,
+    city: uiCust.city || null,
+    address: uiCust.address || null,
+    loyalty_tier: uiCust.loyalty || 'Bronze',
+    membership_status: uiCust.status || 'Active',
+    referral_code: autoReferral,
+    source: uiCust.source || 'Website',
+    promo_active: uiCust.promoActive || false,
+    total_spent: parseFloat(uiCust.totalTransactions || 0),
+    total_transactions: parseInt(uiCust.itemsCount || 0)
+  };
+};
+
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -51,6 +109,60 @@ const Customers = () => {
   const addNameInputRef = useRef(null);
   const editNameInputRef = useRef(null);
 
+  const [loadingData, setLoadingData] = useState(false);
+  const [dbError, setDbError] = useState("");
+
+  const fetchCustomers = async () => {
+    setLoadingData(true);
+    setDbError("");
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map(mapDbToUiCustomer);
+        setCustomers(mapped);
+      } else {
+        console.log("Supabase customers table is empty, seeding with default mock data...");
+        const db = getCRMData();
+        const mockCusts = db.customers || [];
+        
+        if (mockCusts.length > 0) {
+          const dbPayload = mockCusts.map(c => {
+            const dbObj = mapUiToDbCustomer(c);
+            return dbObj;
+          });
+          
+          const { data: seededData, error: seedError } = await supabase
+            .from('customers')
+            .insert(dbPayload)
+            .select();
+          
+          if (seedError) {
+            console.error("Failed to seed customers to Supabase:", seedError);
+            setCustomers(mockCusts);
+          } else if (seededData) {
+            const mappedSeeded = seededData.map(mapDbToUiCustomer);
+            setCustomers(mappedSeeded);
+          }
+        } else {
+          setCustomers([]);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching customers from Supabase:", err);
+      setDbError(`Failed to fetch database: ${err.message}`);
+      const db = getCRMData();
+      setCustomers(db.customers || []);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   // Load data & Cek Otoritas Otentikasi
   useEffect(() => {
     // 1. Validasi Role User dari LocalStorage
@@ -62,9 +174,8 @@ const Customers = () => {
       setCurrentRole("guest");
     }
 
-    // 2. Load DB CRM Data
-    const db = getCRMData();
-    setCustomers(db.customers || []);
+    // 2. Load DB CRM Data from Supabase
+    fetchCustomers();
   }, []);
 
   // Auto-focus inputs
@@ -118,32 +229,44 @@ const Customers = () => {
     return `CREATOR-${cleanName}${100 + index}`;
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    const newId = `CUST-${(customers.length + 1).toString().padStart(3, '0')}`;
-    const referralCode = formData.referralCode || generateReferral(formData.name, customers.length + 1);
-    const newCust = {
-      ...formData,
-      id: newId,
-      referralCode,
-      joinDate: new Date().toLocaleDateString("id-ID"),
-      totalTransactions: 0,
-      itemsCount: 0,
-      paymentMethod: "Virtual Account",
-      lastTransactionDate: new Date().toLocaleDateString("id-ID"),
-      feedback: null
-    };
-    
-    const updatedList = [newCust, ...customers];
-    setCustomers(updatedList);
-    
-    const db = getCRMData();
-    db.customers = updatedList;
-    saveCRMData(db);
+    setLoadingData(true);
+    try {
+      const cleanName = formData.name.trim().replace(/\s+/g, "").substring(0, 3).toUpperCase();
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      const referralCode = formData.referralCode || `CREATOR-${cleanName}${randomNum}`;
 
-    setIsAddModalOpen(false);
-    resetForm();
-    alert(`Success! Customer ${newCust.name} has been added.`);
+      const uiCust = {
+        ...formData,
+        referralCode,
+        totalTransactions: 0,
+        itemsCount: 0,
+        paymentMethod: "Virtual Account"
+      };
+
+      const dbPayload = mapUiToDbCustomer(uiCust);
+
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([dbPayload])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const newCust = mapDbToUiCustomer(data[0]);
+        setCustomers(prev => [newCust, ...prev]);
+        setIsAddModalOpen(false);
+        resetForm();
+        alert(`Success! Customer ${newCust.name} has been added.`);
+      }
+    } catch (err) {
+      console.error("Error creating customer in Supabase:", err);
+      alert(`Gagal menambah kustomer: ${err.message}`);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   const openEditModal = (cust) => {
@@ -165,33 +288,54 @@ const Customers = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    const updatedList = customers.map(c => {
-      if (c.id === editingCustomer.id) {
-        return { ...c, ...formData };
-      }
-      return c;
-    });
-    setCustomers(updatedList);
-    
-    const db = getCRMData();
-    db.customers = updatedList;
-    saveCRMData(db);
+    setLoadingData(true);
+    try {
+      const dbPayload = mapUiToDbCustomer(formData);
 
-    setIsEditModalOpen(false);
-    resetForm();
-    alert(`Success! Customer ${editingCustomer.name} updated.`);
+      const { data, error } = await supabase
+        .from('customers')
+        .update(dbPayload)
+        .eq('id', editingCustomer.id)
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const updatedCustomer = mapDbToUiCustomer(data[0]);
+        setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? updatedCustomer : c));
+        setIsEditModalOpen(false);
+        resetForm();
+        alert(`Success! Customer ${editingCustomer.name} updated.`);
+      }
+    } catch (err) {
+      console.error("Error updating customer in Supabase:", err);
+      alert(`Gagal mengupdate kustomer: ${err.message}`);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
-  const handleDeleteCustomer = (id, name) => {
+  const handleDeleteCustomer = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete customer ${name}?`)) {
-      const updatedList = customers.filter(c => c.id !== id);
-      setCustomers(updatedList);
+      setLoadingData(true);
+      try {
+        const { error } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', id);
 
-      const db = getCRMData();
-      db.customers = updatedList;
-      saveCRMData(db);
+        if (error) throw error;
+
+        setCustomers(prev => prev.filter(c => c.id !== id));
+        alert(`Success! Customer ${name} deleted.`);
+      } catch (err) {
+        console.error("Error deleting customer from Supabase:", err);
+        alert(`Gagal menghapus kustomer: ${err.message}`);
+      } finally {
+        setLoadingData(false);
+      }
     }
   };
 

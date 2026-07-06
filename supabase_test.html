@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Supabase Direct Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; padding: 20px; }
+  h1 { color: #7bc47f; }
+  .btn { background: #4F5C18; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold; }
+  .btn:hover { background: #3d4713; }
+  .btn-red { background: #c0392b; }
+  .log { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-top: 10px; }
+  .ok { color: #7bc47f; }
+  .err { color: #e74c3c; }
+  .info { color: #f39c12; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>🔬 Supabase Direct Diagnostic</h1>
+<p class="info">URL: <strong id="url"></strong></p>
+
+<button class="btn" onclick="testConn()">1. Test Connection (SELECT)</button>
+<button class="btn" onclick="testListTables()">2. List Tables</button>
+<button class="btn" onclick="testInsertCustomer()">3. Insert Customer</button>
+<button class="btn" onclick="testInsertFeedback()">4. Insert Feedback</button>
+<button class="btn" onclick="testInsertPromo()">5. Insert Promo</button>
+<button class="btn btn-red" onclick="logs.innerHTML=''">Clear</button>
+
+<div id="logs" class="log"><em>Click a button to run test...</em></div>
+
+<script>
+const SUPABASE_URL = 'https://kxhxoltfjedlzqtljkfs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4aHhvbHRmamVkbHpxdGxqa2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDA4NjIsImV4cCI6MjA5Njg3Njg2Mn0.Cd1UG1Voe1dcuYpS9FykOhuHhhYPNilHNdFInHSL6fY';
+
+document.getElementById('url').textContent = SUPABASE_URL;
+
+const { createClient } = supabase;
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const logsEl = document.getElementById('logs');
+
+function log(msg, data, isErr = false) {
+  const cls = isErr ? 'err' : 'ok';
+  logsEl.innerHTML += `<p class="${cls}"><strong>${msg}</strong></p>`;
+  if (data !== undefined && data !== null) {
+    logsEl.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  }
+  logsEl.innerHTML += '<hr style="border-color:#333">';
+}
+
+async function testConn() {
+  log('🔍 Testing SELECT from customers...', null);
+  try {
+    const { data, error, status } = await client.from('customers').select('count', { count: 'exact', head: true });
+    if (error) { log('❌ SELECT failed', { error, status }, true); }
+    else { log('✅ SELECT OK — customers table accessible', { status, data }); }
+  } catch(e) { log('❌ Exception', e.message, true); }
+}
+
+async function testListTables() {
+  log('📋 Checking tables...', null);
+  const tables = ['customers','orders','order_items','feedback','promo_items','products','marketing_campaigns'];
+  for (const table of tables) {
+    try {
+      const { data, error, status } = await client.from(table).select('count', { count: 'exact', head: true });
+      if (error) { log(`❌ Table "${table}"`, { error: error.message, code: error.code, status }, true); }
+      else { log(`✅ Table "${table}" — accessible`, { status }); }
+    } catch(e) { log(`❌ Table "${table}" — exception`, e.message, true); }
+  }
+}
+
+async function testInsertCustomer() {
+  log('📝 Testing INSERT into customers...', null);
+  const payload = {
+    full_name: 'Test User Diagnostic',
+    username: 'test_diag_' + Date.now(),
+    email: 'diag_' + Date.now() + '@test.com',
+    phone: '08123456789',
+    address: 'Jakarta',
+    loyalty_tier: 'Bronze',
+    membership_status: 'Active'
+  };
+  log('📤 Payload:', payload);
+  try {
+    const { data, error, status } = await client.from('customers').insert([payload]).select();
+    if (error) { log('❌ INSERT failed', { error: error.message, code: error.code, details: error.details, hint: error.hint, status }, true); }
+    else { log('✅ INSERT customers OK!', data); }
+  } catch(e) { log('❌ Exception', e.message, true); }
+}
+
+async function testInsertFeedback() {
+  log('📝 Testing INSERT into feedback...', null);
+  const payload = {
+    customer_name: 'Diagnostic User',
+    rating: 5,
+    comment: 'Test feedback dari diagnostic tool',
+    sentiment: 'Positive',
+    status: 'Pending',
+    date: new Date().toISOString().split('T')[0]
+  };
+  log('📤 Payload:', payload);
+  try {
+    const { data, error, status } = await client.from('feedback').insert([payload]).select();
+    if (error) { log('❌ INSERT failed', { error: error.message, code: error.code, details: error.details, hint: error.hint, status }, true); }
+    else { log('✅ INSERT feedback OK!', data); }
+  } catch(e) { log('❌ Exception', e.message, true); }
+}
+
+async function testInsertPromo() {
+  log('📝 Testing INSERT into promo_items...', null);
+  const payload = {
+    title: 'Test Promo Diagnostic',
+    original_price: 100000,
+    discount_price: 75000,
+    discount_percent: 25,
+    is_active: true
+  };
+  log('📤 Payload:', payload);
+  try {
+    const { data, error, status } = await client.from('promo_items').insert([payload]).select();
+    if (error) { log('❌ INSERT failed', { error: error.message, code: error.code, details: error.details, hint: error.hint, status }, true); }
+    else { log('✅ INSERT promo_items OK!', data); }
+  } catch(e) { log('❌ Exception', e.message, true); }
+}
+</script>
+</body>
+</html>

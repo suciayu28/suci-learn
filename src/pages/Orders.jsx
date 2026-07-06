@@ -13,7 +13,9 @@ import {
   FaCheck,
   FaBan,
   FaClock,
-  FaLock
+  FaLock,
+  FaBoxOpen,
+  FaTruck
 } from "react-icons/fa";
 import {
   Table,
@@ -24,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCRMData, saveCRMData } from "../lib/crmData";
+import { supabase } from "../services/supabaseClient";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -42,6 +45,48 @@ const Orders = () => {
   const itemsPerPage = 8;
   const searchInputRef = useRef(null);
 
+  const [loadingData, setLoadingData] = useState(false);
+  const [dbError, setDbError] = useState("");
+
+  const fetchOrders = async () => {
+    setLoadingData(true);
+    setDbError("");
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map(o => ({
+          id: o.id, // UUID
+          order_id: o.order_id,
+          customer_id: o.customer_id || '',
+          customerName: o.customer_name || "Valued Customer",
+          tier: o.tier || "Bronze",
+          totalPrice: parseFloat(o.total_price || 0),
+          itemsCount: parseInt(o.items_count || 0),
+          paymentMethod: o.payment_method || "Virtual Account",
+          status: o.status || "Pending",
+          order_date: o.order_date ? new Date(o.order_date).toLocaleDateString("id-ID") : new Date().toLocaleDateString("id-ID")
+        }));
+        setOrders(mapped);
+      } else {
+        const db = getCRMData();
+        setOrders(db.orders || []);
+      }
+    } catch (err) {
+      console.error("Error fetching orders from Supabase:", err);
+      setDbError(`Failed to fetch database: ${err.message}`);
+      const db = getCRMData();
+      setOrders(db.orders || []);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   // Load orders and verify user authentication role
   useEffect(() => {
     // 1. Cek validasi role dari localStorage
@@ -54,8 +99,7 @@ const Orders = () => {
     }
 
     // 2. Ambil data transaksi CRM
-    const db = getCRMData();
-    setOrders(db.orders || []);
+    fetchOrders();
   }, []);
 
   // Auto focus search input
@@ -68,9 +112,9 @@ const Orders = () => {
   // Filter logic
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.order_id.toLowerCase().includes(searchQuery.toLowerCase());
+      (order.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.customer_id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.order_id || '').toLowerCase().includes(searchQuery.toLowerCase());
       
     const matchesTier = filterTier === "All" || order.tier === filterTier;
     const matchesStatus = filterStatus === "All" || order.status === filterStatus;
@@ -94,23 +138,46 @@ const Orders = () => {
     alert(`Mengekspor ${filteredOrders.length} data transaksi filter (${filterStatus}/${filterTier}) ke file Excel...`);
   };
 
-  // Change transaction status from dropdown action
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map(o => {
-      if (o.order_id === orderId) {
-        return { ...o, status: newStatus };
-      }
-      return o;
-    });
-    setOrders(updatedOrders);
+  const updateOrderStatus = async (orderId, newStatus) => {
+    setLoadingData(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('order_id', orderId);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o));
+      setActiveDropdownId(null);
+    } catch (err) {
+      alert(`Gagal merubah status pesanan: ${err.message}`);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
-    // Save to localStorage
-    const db = getCRMData();
-    db.orders = updatedOrders;
-    saveCRMData(db);
+  // Update tracking_status — syncs to member's Lacak page
+  const TRACKING_LABELS = {
+    1: 'Diproses',
+    2: 'Dikemas',
+    3: 'Dalam Pengiriman',
+    4: 'Diterima'
+  };
 
-    setActiveDropdownId(null);
-    alert(`Success! Order ${orderId} status changed to ${newStatus}.`);
+  const updateTrackingStatus = async (orderId, currentTracking) => {
+    const nextStep = Math.min((currentTracking || 1) + 1, 4);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ tracking_status: nextStep, status: nextStep === 4 ? 'Completed' : 'Pending' })
+        .eq('order_id', orderId);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.order_id === orderId
+        ? { ...o, tracking_status: nextStep, status: nextStep === 4 ? 'Completed' : o.status }
+        : o));
+      setActiveDropdownId(null);
+    } catch (err) {
+      alert(`Gagal update tracking: ${err.message}`);
+    }
   };
 
   // ─── 1. LOADING STATE CEK AUTHENTICATION ────────────────────────────
@@ -290,23 +357,40 @@ const Orders = () => {
                         </button>
 
                         {activeDropdownId === order.order_id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white border border-[#F3F3F3] shadow-xl rounded-2xl p-2 z-[99] animate-in fade-in slide-in-from-top-2 duration-250 text-left">
-                            <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 px-3 py-1.5 border-b border-gray-100">Update Status</p>
+                          <div className="absolute right-0 mt-2 w-56 bg-white border border-[#F3F3F3] shadow-xl rounded-2xl p-2 z-[99] animate-in fade-in slide-in-from-top-2 duration-250 text-left">
                             
+                            {/* TRACKING STATUS — hanya tampil jika belum Diterima */}
+                            {(order.tracking_status || 1) < 4 && (
+                              <>
+                                <p className="text-[8px] font-black uppercase tracking-widest text-[#4F5C18] px-3 py-1.5 border-b border-gray-100">
+                                  Tracking: {TRACKING_LABELS[order.tracking_status || 1]} → {TRACKING_LABELS[Math.min((order.tracking_status || 1) + 1, 4)]}
+                                </p>
+                                <button 
+                                  onClick={() => updateTrackingStatus(order.order_id, order.tracking_status || 1)}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                >
+                                  {(order.tracking_status || 1) === 1 && <FaBoxOpen size={10} />}
+                                  {(order.tracking_status || 1) === 2 && <FaTruck size={10} />}
+                                  {(order.tracking_status || 1) === 3 && <FaCheck size={10} />}
+                                  Lanjut: {TRACKING_LABELS[Math.min((order.tracking_status || 1) + 1, 4)]}
+                                </button>
+                                <div className="border-t border-gray-100 my-1" />
+                              </>
+                            )}
+
+                            <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 px-3 py-1.5">Update Status</p>
                             <button 
                               onClick={() => updateOrderStatus(order.order_id, "Completed")}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
                             >
                               <FaCheck size={10} /> Mark Completed
                             </button>
-                            
                             <button 
                               onClick={() => updateOrderStatus(order.order_id, "Pending")}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-xl transition-colors"
                             >
                               <FaClock size={10} /> Set Pending
                             </button>
-                            
                             <button 
                               onClick={() => updateOrderStatus(order.order_id, "Cancelled")}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"

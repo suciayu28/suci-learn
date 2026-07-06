@@ -6,8 +6,18 @@ import {
   FiChevronDown, FiAlertCircle, FiDatabase, FiLayers,
   FiMessageSquare, FiCalendar, FiShield, FiGlobe, FiChevronLeft, FiChevronRight,
   FiClock, FiDollarSign, FiSmartphone, FiMessageCircle, FiBookOpen, FiShare2,
-  FiGift, FiPercent, FiShoppingBag, FiCheckCircle, FiCopy, FiMapPin
+  FiGift, FiPercent, FiShoppingBag, FiCheckCircle, FiCopy, FiMapPin,
+  FiShoppingCart, FiPlus, FiMinus, FiLoader
 } from "react-icons/fi";
+
+// Fallback gambar per kategori
+const CATEGORY_IMGS = {
+  "Tata Rias":       "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600",
+  "Perawatan Kulit": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600",
+  "Parfum":          "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600",
+  "Alat Kecantikan": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=600",
+};
+const getFallbackImg = (tag) => CATEGORY_IMGS[tag] || CATEGORY_IMGS["Tata Rias"];
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar
@@ -17,6 +27,13 @@ import { getCRMData } from "../lib/crmData";
 const LumiereShowcase = () => {
   const navigate = useNavigate();
   
+  // --- STATE CART & CHECKOUT ---
+  const [showcaseCart, setShowcaseCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutSuccess, setIsCheckoutSuccess] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [showcaseProducts, setShowcaseProducts] = useState([]); // dari Supabase
+
   // --- STATE DATA UNTUK DISPLAY ---
   const [crmDb, setCrmDb] = useState({ customers: [], orders: [], reviews: [], campaigns: [] });
   const [alertMsg, setAlertMsg] = useState("");
@@ -67,6 +84,86 @@ const LumiereShowcase = () => {
     const db = getCRMData();
     setCrmDb(db);
   }, []);
+
+  // --- FETCH PRODUK & PROMO DARI SUPABASE ---
+  useEffect(() => {
+    const fetchShowcaseData = async () => {
+      setLoadingProducts(true);
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const sb = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY
+        );
+        const [{ data: catalogData }, { data: promoData }] = await Promise.all([
+          sb.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+          sb.from('promo_items').select('*').eq('is_active', true).order('created_at', { ascending: false })
+        ]);
+
+        let all = [];
+        if (catalogData && catalogData.length > 0) {
+          all = [...all, ...catalogData.map(p => ({
+            id: p.id, title: p.title, tag: p.tag || 'Tata Rias',
+            img: p.img_url || getFallbackImg(p.tag),
+            img_url: p.img_url,
+            price: typeof p.price === 'number' ? p.price : 0,
+            isPromo: false, source: 'catalog'
+          }))];
+        }
+        if (promoData && promoData.length > 0) {
+          all = [...all, ...promoData.map(p => ({
+            id: p.id, title: p.title, tag: 'Tata Rias',
+            img: p.img_url || getFallbackImg('Tata Rias'),
+            img_url: p.img_url,
+            price: typeof p.original_price === 'number' ? p.original_price : 0,
+            promoPrice: typeof p.discount_price === 'number' ? p.discount_price : 0,
+            discountPercent: p.discount_percent || 0,
+            isPromo: true, source: 'promo'
+          }))];
+        }
+        setShowcaseProducts(all.length > 0 ? all : crmDb.products || []);
+      } catch (e) {
+        console.warn('Fallback to crmDb products:', e);
+        setShowcaseProducts(crmDb.products || []);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchShowcaseData();
+  }, []);
+
+  // --- CART HELPERS ---
+  const addToCart = (product) => {
+    setShowcaseCart(prev => {
+      const exists = prev.find(i => i.id === product.id);
+      if (exists) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { ...product, qty: 1 }];
+    });
+  };
+
+  const updateQty = (id, delta) => {
+    setShowcaseCart(prev =>
+      prev.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
+    );
+  };
+
+  const removeFromCart = (id) => setShowcaseCart(prev => prev.filter(i => i.id !== id));
+
+  const cartTotal = useMemo(() => {
+    return showcaseCart.reduce((sum, i) => {
+      const price = i.isPromo && i.promoPrice ? i.promoPrice : i.price;
+      return sum + price * i.qty;
+    }, 0);
+  }, [showcaseCart]);
+
+  const cartCount = showcaseCart.reduce((s, i) => s + i.qty, 0);
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+    setIsCheckoutSuccess(true);
+    setShowcaseCart([]);
+    setTimeout(() => setIsCheckoutSuccess(false), 3000);
+  };
 
   // --- COUNTDOWN TIMER FLASH SALE ---
   useEffect(() => {
@@ -736,63 +833,107 @@ const LumiereShowcase = () => {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {crmDb.products && crmDb.products
-              .filter(p => selectedPromoCategory === "Semua" || p.tag === selectedPromoCategory)
-              .map((product) => {
-                const priceNum = parseInt(product.price.replace(/[^\d]/g, ""));
-                const promoPriceNum = Math.round(priceNum * 0.75); // 25% discount for public promo
-                const memberPriceNum = Math.round(priceNum * 0.8); // 20% discount for members
-                
-                return (
-                  <div key={product.id} className="bg-white border border-[#F3F3F3] rounded-2xl overflow-hidden hover:border-[#4F5C18] hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
-                    <div className="relative overflow-hidden aspect-square bg-[#FAF9F5]">
-                      <img
-                        src={product.img}
-                        alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-                      />
-                      <span className="absolute top-3 left-3 bg-[#4F5C18] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
-                        {product.tag}
-                      </span>
-                      <span className="absolute top-3 right-3 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
-                        <FiPercent size={8} /> 25% OFF
-                      </span>
-                    </div>
+          {loadingProducts ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <FiLoader className="w-8 h-8 text-[#4F5C18] animate-spin" />
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Memuat katalog produk...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {(showcaseProducts.length > 0 ? showcaseProducts : [])
+                .filter(p => selectedPromoCategory === "Semua" || p.tag === selectedPromoCategory)
+                .map((product) => {
+                  const basePrice  = product.price || 0;
+                  const promoPrice = product.isPromo && product.promoPrice ? product.promoPrice : Math.round(basePrice * 0.75);
+                  const memberPrice = Math.round(basePrice * 0.80);
+                  const inCart = showcaseCart.find(i => i.id === product.id);
 
-                    <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-poppins font-bold text-sm text-[#262626] line-clamp-1 group-hover:text-[#4F5C18] transition-colors">{product.title}</h4>
-                        <p className="text-[11px] text-slate-400">Dermatologically tested premium beauty product.</p>
+                  return (
+                    <div key={product.id} className="bg-white border border-[#F3F3F3] rounded-2xl overflow-hidden hover:border-[#4F5C18] hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
+                      <div className="relative overflow-hidden aspect-square bg-[#FAF9F5]">
+                        <img
+                          src={product.img_url || product.img || getFallbackImg(product.tag)}
+                          alt={product.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+                          onError={(e) => { const f = getFallbackImg(product.tag); if (e.target.src !== f) e.target.src = f; }}
+                        />
+                        <span className="absolute top-3 left-3 bg-[#4F5C18] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
+                          {product.tag}
+                        </span>
+                        {product.isPromo && (
+                          <span className="absolute top-3 right-3 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-xs flex items-center gap-0.5">
+                            <FiPercent size={8} /> {product.discountPercent || 25}% OFF
+                          </span>
+                        )}
+                        {inCart && (
+                          <span className="absolute bottom-3 right-3 bg-[#4F5C18] text-white text-[9px] font-bold px-2 py-1 rounded-lg">
+                            ✓ {inCart.qty} di Keranjang
+                          </span>
+                        )}
                       </div>
 
-                      {/* Pricing block */}
-                      <div className="space-y-1 border-t border-gray-50 pt-3">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Harga Asli:</span>
-                          <span className="text-xs text-slate-400 line-through">{product.price}</span>
+                      <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                        <div className="space-y-1">
+                          <h4 className="font-poppins font-bold text-sm text-[#262626] line-clamp-1 group-hover:text-[#4F5C18] transition-colors">{product.title}</h4>
+                          <p className="text-[11px] text-slate-400">Dermatologically tested premium beauty product.</p>
                         </div>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">Promo Flash:</span>
-                          <span className="text-sm font-black text-rose-500">Rp {promoPriceNum.toLocaleString("id-ID")}</span>
+
+                        {/* Pricing */}
+                        <div className="space-y-1 border-t border-gray-50 pt-3">
+                          <div className="flex justify-between items-baseline">
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Harga Asli:</span>
+                            <span className="text-xs text-slate-400 line-through">Rp {basePrice.toLocaleString('id-ID')}</span>
+                          </div>
+                          {product.isPromo && (
+                            <div className="flex justify-between items-baseline">
+                              <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">Promo Flash:</span>
+                              <span className="text-sm font-black text-rose-500">Rp {promoPrice.toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-baseline bg-[#F2F7D6]/50 p-1.5 rounded-lg border border-[#E2E9B8]/40">
+                            <span className="text-[8px] text-[#4F5C18] font-bold uppercase tracking-wider">Harga Member CRM:</span>
+                            <span className="text-xs font-black text-[#4F5C18]">Rp {memberPrice.toLocaleString('id-ID')} (-20%)</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-baseline bg-[#F2F7D6]/50 p-1.5 rounded-lg border border-[#E2E9B8]/40">
-                          <span className="text-[8px] text-[#4F5C18] font-bold uppercase tracking-wider">Harga Member CRM:</span>
-                          <span className="text-xs font-black text-[#4F5C18]">Rp {memberPriceNum.toLocaleString("id-ID")} (-20%)</span>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => addToCart(product)}
+                            className="flex-1 py-2.5 bg-[#4F5C18] hover:bg-[#3d4712] text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 border-none cursor-pointer"
+                          >
+                            <FiShoppingCart size={12} /> {inCart ? 'Tambah Lagi' : 'Add to Cart'}
+                          </button>
+                          <button
+                            onClick={() => navigate('/login')}
+                            className="px-3 py-2.5 bg-white border border-[#E2E9B8] text-[#4F5C18] hover:bg-[#F2F7D6] text-[10px] font-bold rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                            title="Login untuk harga member"
+                          >
+                            <FiUser size={12} />
+                          </button>
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => navigate("/login")}
-                        className="w-full py-2.5 bg-[#4F5C18] hover:bg-[#3d4712] text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 border-none cursor-pointer"
-                      >
-                        <FiShoppingBag size={12} /> Beli via Member
-                      </button>
                     </div>
-                  </div>
-                );
-              })}
-          </div>
+                  );
+                })}
+              {showcaseProducts.filter(p => selectedPromoCategory === "Semua" || p.tag === selectedPromoCategory).length === 0 && !loadingProducts && (
+                <div className="col-span-4 text-center py-12 text-slate-400 italic text-sm">
+                  Belum ada produk di kategori ini. Admin dapat menambahkan lewat Catalog Management.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Floating Cart Button */}
+          {cartCount > 0 && (
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="fixed bottom-8 right-8 z-50 bg-[#262626] text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-2.5 hover:bg-[#4F5C18] transition-all cursor-pointer border border-white/10 animate-bounce"
+            >
+              <FiShoppingCart size={16} />
+              <span className="text-[10px] font-black tracking-widest uppercase">Keranjang ({cartCount})</span>
+            </button>
+          )}
 
           {/* CRM Integration Notice Panel */}
           <div className="bg-[#FAF9F5] border border-gray-200/80 p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1641,6 +1782,92 @@ const LumiereShowcase = () => {
           </div>
         </div>
       </footer>
+
+      {/* ===== MODAL KERANJANG BELANJA ===== */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+              <h3 className="font-poppins font-black text-xl text-[#262626] flex items-center gap-2">
+                <FiShoppingCart className="text-[#4F5C18]" /> Keranjang Belanja
+              </h3>
+              <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-red-500 cursor-pointer bg-transparent border-none">
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-3 pr-1">
+              {showcaseCart.map(item => {
+                const displayPrice = item.isPromo && item.promoPrice ? item.promoPrice : item.price;
+                return (
+                  <div key={item.id} className="flex items-center gap-3 bg-[#FAF9F5] p-3 rounded-xl border border-[#EAE9E1]">
+                    <img
+                      src={item.img_url || item.img || getFallbackImg(item.tag)}
+                      alt={item.title}
+                      className="w-14 h-14 object-cover rounded-xl"
+                      onError={(e) => { const f = getFallbackImg(item.tag); if (e.target.src !== f) e.target.src = f; }}
+                    />
+                    <div className="flex-grow min-w-0">
+                      <p className="font-bold text-xs text-[#262626] line-clamp-1">{item.title}</p>
+                      <p className="text-[10px] text-[#4F5C18] font-bold">Rp {displayPrice.toLocaleString('id-ID')}</p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-100">
+                      <button onClick={() => updateQty(item.id, -1)} className="text-gray-400 hover:text-[#4F5C18] cursor-pointer bg-transparent border-none p-0"><FiMinus size={11} /></button>
+                      <span className="text-xs font-black w-4 text-center">{item.qty}</span>
+                      <button onClick={() => updateQty(item.id, 1)} className="text-gray-400 hover:text-[#4F5C18] cursor-pointer bg-transparent border-none p-0"><FiPlus size={11} /></button>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 cursor-pointer bg-transparent border-none p-0"><FiX size={14} /></button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-gray-100 pt-5 mt-4 space-y-4">
+              <div className="flex justify-between items-center px-1">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-400">Total Pembayaran</span>
+                <span className="text-xl font-black text-[#4F5C18]">Rp {cartTotal.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl text-[10px] text-amber-700 font-bold">
+                💡 Daftar sebagai Member untuk harga lebih hemat hingga 20% + tracking pesanan!
+              </div>
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-[#4F5C18] hover:bg-[#262626] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer border-none shadow-lg shadow-[#4F5C18]/20"
+              >
+                <FiCheckCircle size={14} /> Konfirmasi Pesanan
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full bg-transparent border border-[#4F5C18] text-[#4F5C18] py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer hover:bg-[#F2F7D6]"
+              >
+                <FiUser size={12} /> Login Dulu untuk Harga Member
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL CHECKOUT BERHASIL ===== */}
+      {isCheckoutSuccess && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 text-center shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <FiCheckCircle className="w-10 h-10 text-emerald-500" />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#4F5C18] block mb-1">Lumière Cosmetics</span>
+            <h3 className="font-poppins font-black text-2xl text-[#262626] mb-3">Pesanan Diterima!</h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-5">
+              Terima kasih telah berbelanja. Daftar sebagai Member untuk<br/>tracking pesanan & diskon eksklusif!
+            </p>
+            <button
+              onClick={() => { setIsCheckoutSuccess(false); navigate('/login'); }}
+              className="w-full bg-[#4F5C18] hover:bg-[#262626] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all cursor-pointer border-none"
+            >
+              Daftar / Login Member
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

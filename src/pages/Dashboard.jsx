@@ -24,6 +24,7 @@ import {
   Legend 
 } from "recharts";
 import { getCRMData } from "../lib/crmData";
+import { supabase } from "../services/supabaseClient";
 import PageHeader from "../components/PageHeader";
 
 const Dashboard = () => {
@@ -32,14 +33,75 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
-    // Simulate API fetch delay
-    const timer = setTimeout(() => {
-      const db = getCRMData();
-      setData(db);
-      setLoading(false);
-    }, 500);
+    const fetchDashboardData = async () => {
+      try {
+        const [
+          { data: customers, error: custErr },
+          { data: orders, error: ordErr },
+          { data: reviews, error: revErr },
+          { data: campaigns, error: campErr }
+        ] = await Promise.all([
+          supabase.from('customers').select('*'),
+          supabase.from('orders').select('*'),
+          supabase.from('feedback').select('*'),
+          supabase.from('marketing_campaigns').select('*')
+        ]);
 
-    return () => clearTimeout(timer);
+        // If all queries succeed and have data, use Supabase data
+        if (!custErr && customers && customers.length > 0) {
+          const mappedCustomers = customers.map(c => ({
+            ...c,
+            id: c.id,
+            name: c.full_name,
+            username: c.username,
+            email: c.email,
+            loyalty: c.loyalty_tier || 'Bronze',
+            status: c.membership_status || 'Active',
+            source: c.source || 'Website',
+            totalTransactions: parseFloat(c.total_spent || 0),
+            itemsCount: parseInt(c.total_transactions || 0)
+          }));
+
+          const mappedOrders = (!ordErr && orders) ? orders.map(o => ({
+            ...o,
+            order_id: o.order_id,
+            customerName: o.customer_name || 'Customer',
+            customer_id: o.customer_id || '',
+            tier: o.tier || 'Bronze',
+            totalPrice: parseFloat(o.total_price || 0),
+            itemsCount: parseInt(o.items_count || 0),
+            paymentMethod: o.payment_method || 'Virtual Account',
+            status: o.status || 'Pending'
+          })) : [];
+
+          const mappedReviews = (!revErr && reviews) ? reviews.map(r => ({
+            ...r,
+            id: r.id,
+            customerName: r.customer_name || 'Customer',
+            rating: r.rating || 5,
+            comment: r.comment || '',
+            sentiment: r.sentiment || 'Neutral',
+            status: r.status || 'Pending'
+          })) : [];
+
+          const mappedCampaigns = (!campErr && campaigns) ? campaigns : [];
+
+          setData({ customers: mappedCustomers, orders: mappedOrders, reviews: mappedReviews, campaigns: mappedCampaigns });
+        } else {
+          // Fallback to localStorage mock data
+          const db = getCRMData();
+          setData(db);
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error, using mock data:", err);
+        const db = getCRMData();
+        setData(db);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   if (loading || !data) {

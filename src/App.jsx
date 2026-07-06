@@ -24,7 +24,8 @@ const Membership = React.lazy(() => import("./pages/Membership"));
 const Feedback = React.lazy(() => import("./pages/Feedback"));
 const Marketing = React.lazy(() => import("./pages/Marketing"));
 const AdminCatalog = React.lazy(() => import("./pages/AdminCatalog"));
-const PromoSales = React.lazy(() => import("./pages/PromoSales")); // 1. LAZY IMPORT UNTUK PROMO & SALES
+const PromoSales = React.lazy(() => import("./pages/PromoSales"));
+const AdminProfile = React.lazy(() => import("./pages/AdminProfile"));
 
 // Lazy Import untuk Halaman ManageUsers Baru
 const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
@@ -84,6 +85,9 @@ function App() {
 
           {/* --- 2. ADDED ROUTE: Promo & Sales --- */}
           <Route path="promo" element={<PromoSales />} />
+
+          {/* Admin Profile */}
+          <Route path="profile" element={<AdminProfile />} />
 
           {/* Catalog Management */}
           <Route path="catalog" element={<AdminCatalog />} />

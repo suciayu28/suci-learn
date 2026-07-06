@@ -11,6 +11,7 @@ import {
   FiCornerDownRight
 } from "react-icons/fi";
 import { getCRMData, saveCRMData } from "../lib/crmData";
+import { supabase } from "../services/supabaseClient";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // Import data pilihan filter yang sudah dipisah (Menggunakan Alias @/ dan .js)
@@ -38,6 +39,37 @@ const Feedback = () => {
   // Refs
   const replyTextareaRef = useRef(null);
 
+  const fetchReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const mapped = data.map(r => ({
+          id: r.id,
+          customerName: r.customer_name || "Customer",
+          avatar: (r.customer_name || "C").substring(0, 2).toUpperCase(),
+          rating: r.rating || 5,
+          comment: r.comment || "",
+          sentiment: r.sentiment || "Neutral",
+          status: r.status || "Pending",
+          date: r.date ? new Date(r.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : new Date().toLocaleDateString(),
+          adminReply: r.admin_reply || ""
+        }));
+        setReviews(mapped);
+      } else {
+        const db = getCRMData();
+        setReviews(db.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching feedback from Supabase:", err);
+      const db = getCRMData();
+      setReviews(db.reviews || []);
+    }
+  };
+
   useEffect(() => {
     // 1. Cek Role User Login
     const savedUser = localStorage.getItem("userLoggedIn");
@@ -49,21 +81,8 @@ const Feedback = () => {
       setCurrentRole("Guest");
     }
 
-    // 2. Fungsi Ambil data CRM
-    const fetchReviewsData = () => {
-      const db = getCRMData();
-      setReviews(db.reviews || []);
-    };
-
-    // Jalankan sekali di awal
-    fetchReviewsData();
-
-    // SINKRONISASI REAL-TIME: 
-    // Menggunakan interval untuk terus mengecek data baru dari Lumiere Showcase setiap 1 detik
-    const interval = setInterval(fetchReviewsData, 1000);
-
-    // Membersihkan interval saat komponen tidak lagi digunakan
-    return () => clearInterval(interval);
+    // 2. Ambil data dari Supabase
+    fetchReviews();
   }, []);
 
   // Auto-focus reply textarea when dialog opens
@@ -84,9 +103,9 @@ const Feedback = () => {
   // Filter
   const filteredReviews = reviews.filter(rev => {
     const matchesSearch = 
-      rev.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rev.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (rev.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (rev.comment || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (rev.id || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
       
     const matchesSentiment = filterSentiment === "All" || rev.sentiment === filterSentiment;
     const matchesStatus = filterStatus === "All" || rev.status === filterStatus;
@@ -100,49 +119,41 @@ const Feedback = () => {
     setIsDialogOpen(true);
   };
 
-  const handleReplySubmit = (e) => {
+  const handleReplySubmit = async (e) => {
     e.preventDefault();
-
-    const updatedReviews = reviews.map(r => {
-      if (r.id === activeReview.id) {
-        return {
-          ...r,
-          adminReply: replyText,
-          status: "Approved" // Auto-approve once responded
-        };
-      }
-      return r;
-    });
-
-    setReviews(updatedReviews);
-
-    const db = getCRMData();
-    db.reviews = updatedReviews;
-    saveCRMData(db);
-
-    setIsDialogOpen(false);
-    setActiveReview(null);
-    setReplyText("");
-    alert(`Success! Response sent to ${activeReview.customerName}.`);
+    try {
+      const { error } = await supabase
+        .from('feedback')
+        .update({ admin_reply: replyText, status: "Approved" })
+        .eq('id', activeReview.id);
+      if (error) throw error;
+      setReviews(prev => prev.map(r => r.id === activeReview.id ? { ...r, adminReply: replyText, status: "Approved" } : r));
+      setIsDialogOpen(false);
+      setActiveReview(null);
+      setReplyText("");
+      alert(`Success! Response sent to ${activeReview.customerName}.`);
+    } catch (err) {
+      console.error("Error saving reply to Supabase:", err);
+      alert(`Gagal menyimpan balasan: ${err.message}`);
+    }
   };
 
-  const updateReviewStatus = (id, newStatus) => {
-    const updatedReviews = reviews.map(r => {
-      if (r.id === id) {
-        return { ...r, status: newStatus };
-      }
-      return r;
-    });
-
-    setReviews(updatedReviews);
-
-    const db = getCRMData();
-    db.reviews = updatedReviews;
-    saveCRMData(db);
+  const updateReviewStatus = async (id, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from('feedback')
+        .update({ status: newStatus })
+        .eq('id', id);
+      if (error) throw error;
+      setReviews(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    } catch (err) {
+      console.error("Error updating feedback status:", err);
+      alert(`Gagal update status: ${err.message}`);
+    }
   };
 
   // ─── LOGIKAL KIRIM FEEDBACK KHUSUS CUSTOMER ───────────────────────────
-  const handleCustomerSubmitFeedback = (e) => {
+  const handleCustomerSubmitFeedback = async (e) => {
     e.preventDefault();
     
     let sentiment = "Neutral";
@@ -150,30 +161,44 @@ const Feedback = () => {
     if (custRating <= 2) sentiment = "Negative";
 
     const name = userLoggedInData?.email ? userLoggedInData.email.split("@")[0] : "Customer";
-    const initials = name.substring(0, 2).toUpperCase();
+    const customerName = name.charAt(0).toUpperCase() + name.slice(1);
 
-    const newFeedback = {
-      id: `REV-${(reviews.length + 1).toString().padStart(3, "0")}`,
-      customerName: name.charAt(0).toUpperCase() + name.slice(1),
-      avatar: initials,
+    const dbPayload = {
+      customer_name: customerName,
       rating: custRating,
       comment: custComment,
       sentiment: sentiment,
       status: "Pending",
-      date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
-      adminReply: ""
+      date: new Date().toISOString().split('T')[0]
     };
 
-    const updatedReviews = [newFeedback, ...reviews];
-    setReviews(updatedReviews);
-
-    const db = getCRMData();
-    db.reviews = updatedReviews;
-    saveCRMData(db);
-
-    setCustComment("");
-    setCustRating(5);
-    alert("Terima kasih! Feedback Anda berhasil dikirim dan akan ditinjau oleh Admin.");
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .insert([dbPayload])
+        .select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newFeedback = {
+          id: data[0].id,
+          customerName: data[0].customer_name,
+          avatar: customerName.substring(0, 2).toUpperCase(),
+          rating: data[0].rating,
+          comment: data[0].comment,
+          sentiment: data[0].sentiment,
+          status: data[0].status,
+          date: new Date(data[0].date || Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+          adminReply: ""
+        };
+        setReviews(prev => [newFeedback, ...prev]);
+      }
+      setCustComment("");
+      setCustRating(5);
+      alert("Terima kasih! Feedback Anda berhasil dikirim dan akan ditinjau oleh Admin.");
+    } catch (err) {
+      console.error("Error submitting feedback to Supabase:", err);
+      alert(`Gagal mengirim feedback: ${err.message}`);
+    }
   };
 
   // ─── LOADING STATE SAAT CEK ROLE ──────────────────────────────────────

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { getCRMData } from '../lib/crmData';
 
 const SupabaseDebugger = () => {
   const [results, setResults] = useState([]);
@@ -82,6 +83,59 @@ const SupabaseDebugger = () => {
     }
   };
 
+  const seedMockData = async () => {
+    setIsRunning(true);
+    addLog('🌱 Seeding mock data to Supabase...', null);
+
+    const db = getCRMData();
+    let seeded = 0;
+    let errors = [];
+
+    // Seed customers
+    if (db.customers && db.customers.length > 0) {
+      try {
+        const custPayloads = db.customers.slice(0, 10).map(c => ({
+          full_name: c.name || c.full_name || 'Unknown',
+          username: (c.name || '').toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
+          email: c.email || `mock_${Date.now()}@lumier.com`,
+          phone: c.phone || '08000000000',
+          address: c.address || 'Jakarta',
+          loyalty_tier: c.loyalty || c.loyalty_tier || 'Bronze',
+          membership_status: c.status || 'Active',
+          source: c.source || 'Website',
+          total_spent: parseFloat(c.totalTransactions || 0),
+          total_transactions: parseInt(c.itemsCount || 0)
+        }));
+        const { data, error } = await supabase.from('customers').insert(custPayloads).select();
+        if (error) errors.push('Customers: ' + error.message);
+        else { seeded += data.length; addLog(`✅ Seeded ${data.length} customers`, data); }
+      } catch (e) { errors.push('Customers: ' + e.message); }
+    }
+
+    // Seed feedback/reviews
+    if (db.reviews && db.reviews.length > 0) {
+      try {
+        const revPayloads = db.reviews.slice(0, 10).map(r => ({
+          customer_name: r.customerName || 'Customer',
+          rating: r.rating || 5,
+          comment: r.comment || '',
+          sentiment: r.sentiment || 'Neutral',
+          status: r.status || 'Pending',
+          date: new Date().toISOString().split('T')[0],
+          admin_reply: r.adminReply || null
+        }));
+        const { data, error } = await supabase.from('feedback').insert(revPayloads).select();
+        if (error) errors.push('Feedback: ' + error.message);
+        else { seeded += data.length; addLog(`✅ Seeded ${data.length} feedback entries`, data); }
+      } catch (e) { errors.push('Feedback: ' + e.message); }
+    }
+
+    if (errors.length > 0) addLog('⚠️ Some errors during seeding', errors, true);
+    else addLog(`🎉 Seeding complete! ${seeded} records inserted.`, { seeded });
+
+    setIsRunning(false);
+  };
+
   const runAllTests = async () => {
     setIsRunning(true);
     setResults([]);
@@ -134,6 +188,13 @@ const SupabaseDebugger = () => {
           className="p-4 bg-[#4F5C18] hover:bg-[#3d4713] border border-[#4F5C18] rounded-xl text-white font-bold text-sm uppercase tracking-widest disabled:opacity-50"
         >
           🚀 Run All Tests
+        </button>
+        <button
+          onClick={seedMockData}
+          disabled={isRunning}
+          className="p-4 col-span-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl text-amber-800 font-bold text-sm uppercase tracking-widest disabled:opacity-50"
+        >
+          🌱 Seed Mock Data to Supabase (Customers + Feedback)
         </button>
       </div>
 

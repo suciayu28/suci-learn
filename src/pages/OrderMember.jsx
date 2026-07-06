@@ -7,6 +7,15 @@ import {
 } from "react-icons/fi";
 import { productsAPI, ordersAPI } from "../lib/supabase";
 
+// Fallback gambar per kategori (sama dengan AdminCatalog)
+const CATEGORY_IMGS = {
+  "Tata Rias":        "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600",
+  "Perawatan Kulit":  "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600",
+  "Parfum":           "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600",
+  "Alat Kecantikan":  "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=600",
+};
+const getFallbackImg = (tag) => CATEGORY_IMGS[tag] || "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600";
+
 const OrderMember = ({ onLogout }) => {
   // --- STATE NAVIGASI PORTAL ---
   const [activePage, setActivePage] = useState("katalog"); 
@@ -38,14 +47,16 @@ const OrderMember = ({ onLogout }) => {
   const [checkoutSuccess, setCheckoutSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // --- STATE DATA PESANAN & TRACKING ---
+  // --- STATE TRACKING & ORDER ---
   const [activeOrder, setActiveOrder] = useState(null);
   const [trackingStatus, setTrackingStatus] = useState(1); 
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
   // --- STATE RATING & FEEDBACK ---
   const [ratings, setRatings] = useState({}); 
   const [feedbacks, setFeedbacks] = useState({}); 
   const [submittedReviews, setSubmittedReviews] = useState([]); 
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   // =========================================================================
   // SYNC PROFILE & LOAD PRODUCTS FROM SUPABASE
@@ -54,17 +65,24 @@ const OrderMember = ({ onLogout }) => {
     initializeData();
   }, []);
 
+  const DEFAULT_IMG = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600';
+
   const initializeData = async () => {
     setIsLoading(true);
     try {
       // Load user profile from localStorage
       const session = localStorage.getItem("userLoggedIn");
+      let memberEmail = null;
+      let memberName = null;
+
       if (session) {
         try {
           const parsed = JSON.parse(session);
+          memberEmail = parsed.email || null;
+          memberName = parsed.name || parsed.username || "Member Premium";
           const mergedData = {
-            name: parsed.name || parsed.username || "Member Premium",
-            email: parsed.email || "member@lumiere.com",
+            name: memberName,
+            email: memberEmail || "member@lumiere.com",
             phone: parsed.phone || parsed.telepon || "-",
             address: parsed.address || parsed.alamat || "Alamat belum diatur. Silakan perbarui di menu Profil Akun.",
             tier: "Gold Tier",
@@ -77,43 +95,127 @@ const OrderMember = ({ onLogout }) => {
         }
       }
 
-      // Load products from Supabase
+      // Load products from Supabase (catalog admin) + promo_items in parallel
       try {
-        const productData = await productsAPI.getAllProducts({ isActive: true });
-        
-        if (productData && productData.length > 0) {
-          const processedProducts = productData.map((p) => {
-            const productName = p.title ? p.title.toLowerCase() : "";
-            const basePrice = typeof p.price === 'number' ? p.price : parseInt(p.price?.toString().replace(/[^\d]/g, "") || "0");
-            const discountedPriceNum = basePrice * 0.8;
-            const isPromoItem = productName.includes("lipstick") || productName.includes("serum") || productName.includes("hydrating");
-            
+        const { createClient } = await import('@supabase/supabase-js');
+        const sbUrl = import.meta.env.VITE_SUPABASE_URL;
+        const sbKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const sb = createClient(sbUrl, sbKey);
+
+        const [{ data: catalogData }, { data: promoData }] = await Promise.all([
+          sb.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+          sb.from('promo_items').select('*').eq('is_active', true).order('created_at', { ascending: false })
+        ]);
+
+        const DEFAULT_IMG = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=600';
+        let allProducts = [];
+
+        // Map catalog products
+        if (catalogData && catalogData.length > 0) {
+          const catalogMapped = catalogData.map(p => {
+            const basePrice = typeof p.price === 'number' ? p.price : 0;
+            const memberPrice = Math.round(basePrice * 0.85); // 15% member discount
             return {
-              ...p,
-              img: p.img_url || p.img,
+              id: p.id,
+              title: p.title,
+              tag: p.tag || 'Perawatan Kulit',
+              img: p.img_url || DEFAULT_IMG,
+              img_url: p.img_url || DEFAULT_IMG,
               price: basePrice,
-              isPromo: isPromoItem,
-              originalPrice: basePrice, 
-              memberPrice: discountedPriceNum 
+              originalPrice: basePrice,
+              memberPrice,
+              isPromo: false,
+              source: 'catalog'
             };
           });
-          setProducts(processedProducts);
+          allProducts = [...allProducts, ...catalogMapped];
+        }
+
+        // Map promo items — tampil sebagai produk dengan badge PROMO
+        if (promoData && promoData.length > 0) {
+          const promoMapped = promoData.map(p => {
+            const origPrice = typeof p.original_price === 'number' ? p.original_price : 0;
+            const discPrice = typeof p.discount_price === 'number' ? p.discount_price : origPrice;
+            return {
+              id: p.id,
+              title: p.title,
+              tag: 'Tata Rias',
+              img: p.img_url || DEFAULT_IMG,
+              img_url: p.img_url || DEFAULT_IMG,
+              price: origPrice,
+              originalPrice: origPrice,
+              memberPrice: discPrice,
+              isPromo: true,
+              discountPercent: p.discount_percent || 0,
+              source: 'promo'
+            };
+          });
+          allProducts = [...allProducts, ...promoMapped];
+        }
+
+        if (allProducts.length > 0) {
+          setProducts(allProducts);
         } else {
-          // Fallback data jika Supabase kosong
+          // Fallback jika Supabase kosong
           setProducts([
-            { id: 1, title: "Hydrating Serum", price: 350000, tag: "Perawatan Kulit", img: null, isPromo: true, originalPrice: 350000, memberPrice: 280000 },
-            { id: 2, title: "Velvet Lipstick", price: 280000, tag: "Tata Rias", img: null, isPromo: true, originalPrice: 280000, memberPrice: 224000 },
-            { id: 3, title: "Glow Moisturizer", price: 320000, tag: "Perawatan Kulit", img: null, isPromo: false, originalPrice: 320000, memberPrice: 256000 },
+            { id: 'f1', title: 'Hydrating Serum', price: 350000, tag: 'Perawatan Kulit', img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80', isPromo: false, originalPrice: 350000, memberPrice: 297500 },
+            { id: 'f2', title: 'Velvet Lipstick', price: 280000, tag: 'Tata Rias', img: 'https://images.unsplash.com/photo-1586495777744-4e6232bf04ef?auto=format&fit=crop&w=500&q=80', isPromo: false, originalPrice: 280000, memberPrice: 238000 },
+            { id: 'f3', title: 'Glow Moisturizer', price: 320000, tag: 'Perawatan Kulit', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=500&q=80', isPromo: false, originalPrice: 320000, memberPrice: 272000 },
           ]);
         }
       } catch (error) {
-        console.error("Error loading products:", error);
-        // Fallback if Supabase fails
+        console.error('Error loading products from Supabase:', error);
         setProducts([
-          { id: 1, title: "Hydrating Serum", price: 350000, tag: "Perawatan Kulit", img: null, isPromo: true, originalPrice: 350000, memberPrice: 280000 },
-          { id: 2, title: "Velvet Lipstick", price: 280000, tag: "Tata Rias", img: null, isPromo: true, originalPrice: 280000, memberPrice: 224000 },
-          { id: 3, title: "Glow Moisturizer", price: 320000, tag: "Perawatan Kulit", img: null, isPromo: false, originalPrice: 320000, memberPrice: 256000 },
+          { id: 'f1', title: 'Hydrating Serum', price: 350000, tag: 'Perawatan Kulit', img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=500&q=80', isPromo: false, originalPrice: 350000, memberPrice: 297500 },
         ]);
+      }
+
+      // ── FETCH ORDER TERAKHIR MEMBER DARI SUPABASE ──────────────────
+      // Sehingga tracking tetap terlihat walau member login ulang
+      if (memberEmail) {
+        try {
+          const { createClient } = await import('@supabase/supabase-js');
+          const sb = createClient(
+            import.meta.env.VITE_SUPABASE_URL,
+            import.meta.env.VITE_SUPABASE_ANON_KEY
+          );
+          // Ambil order terakhir berdasarkan nama customer (email disimpan di customer_name atau customer_id)
+          const { data: latestOrder } = await sb
+            .from('orders')
+            .select('*')
+            .or(`customer_name.eq.${memberName},shipping_address.neq.null`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          // Fallback: cari berdasarkan email
+          let orderData = latestOrder && latestOrder[0];
+          if (!orderData) {
+            const { data: byEmail } = await sb
+              .from('orders')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(1);
+            orderData = byEmail && byEmail[0];
+          }
+
+          if (orderData) {
+            setTrackingStatus(orderData.tracking_status || 1);
+            setActiveOrder({
+              id: orderData.id,
+              orderId: orderData.order_id,
+              customerName: orderData.customer_name,
+              courier: orderData.shipping_courier || 'Lumiere Express',
+              address: orderData.shipping_address || '',
+              paymentMethod: orderData.payment_method || 'Virtual Account',
+              totalPrice: orderData.total_price || 0,
+              items: [],
+              tracking_status: orderData.tracking_status || 1,
+              _orderId: orderData.id // UUID untuk polling
+            });
+          }
+        } catch (orderErr) {
+          console.warn('Could not fetch member order:', orderErr);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -191,52 +293,71 @@ const OrderMember = ({ onLogout }) => {
     setCheckoutSuccess("");
 
     try {
-      // 1. Prepare order data
       const orderId = `LMR-${Date.now().toString().slice(-6)}`;
+      const totalPrice = subtotal + shippingCost;
+
+      // 1. Try to find or create a customer record in Supabase by email
+      let customerId = null;
+      if (userProfile.email) {
+        try {
+          const { data: existingCust } = await ordersAPI.supabase?.from('customers').select('id').eq('email', userProfile.email).maybeSingle();
+          if (existingCust) customerId = existingCust.id;
+        } catch (_) { /* ignore - customer_id can be null */ }
+      }
+
+      // 2. Prepare order data matching the orders table schema exactly
       const orderData = {
         order_id: orderId,
+        customer_id: customerId,           // UUID or null
         customer_name: userProfile.name,
-        customer_email: userProfile.email,
-        customer_phone: userProfile.phone,
-        shipping_address: userProfile.address,
-        subtotal: subtotal,
-        shipping_cost: shippingCost,
-        total_price: subtotal + shippingCost,
-        status: "Pending",
+        total_price: totalPrice,
+        items_count: cart.reduce((a, i) => a + i.quantity, 0),
         payment_method: paymentMethod,
-        courier: courier,
-        points_earned: totalWeightPoints
+        status: "Pending",
+        shipping_address: userProfile.address || "-",
+        shipping_courier: courier,
+        tier: "Bronze",
+        order_date: new Date().toISOString().split('T')[0],
+        tracking_status: 1
       };
 
-      // 2. Prepare order items
-      const itemsData = cart.map(item => ({
-        product_id: item.id,
-        product_name: item.title,
-        product_tag: item.tag,
-        product_img: item.img,
-        quantity: item.quantity,
-        price_per_unit: typeof item.memberPrice === 'number' ? item.memberPrice : parseInt(item.memberPrice?.toString().replace(/[^\d]/g, "") || "0"),
-        subtotal: (typeof item.memberPrice === 'number' ? item.memberPrice : parseInt(item.memberPrice?.toString().replace(/[^\d]/g, "") || "0")) * item.quantity
-      }));
+      // 3. Prepare order items matching the order_items table schema exactly
+      const itemsData = cart.map(item => {
+        const priceNum = typeof item.memberPrice === 'number'
+          ? item.memberPrice
+          : parseInt(item.memberPrice?.toString().replace(/[^\d]/g, "") || "0");
+        // Only use UUID product_id, otherwise null
+        const isUUID = typeof item.id === 'string' && item.id.includes('-');
+        return {
+          product_id: isUUID ? item.id : null,
+          product_title: item.title,
+          price: priceNum,
+          quantity: item.quantity
+        };
+      });
 
       console.log("📤 Sending order to Supabase:", { orderData, itemsData });
 
-      // 3. Try to create order in Supabase
+      // 4. Try to create order in Supabase
       try {
         const result = await ordersAPI.createOrderWithItems(orderData, itemsData);
         console.log("✅ Order created successfully:", result);
-        setActiveOrder({ ...orderData, id: result.order.id, items: result.items, orderId: orderId });
+        setActiveOrder({ ...orderData, id: result.order.id, items: result.items, orderId });
       } catch (supabaseError) {
         console.warn("⚠️ Supabase insert failed, using local mode:", supabaseError);
-        // Fallback: set order locally for testing
-        setActiveOrder({ ...orderData, id: Date.now(), items: itemsData, orderId: orderId });
+        setActiveOrder({ ...orderData, id: Date.now(), items: itemsData, orderId });
       }
 
-      // Clear cart and redirect
+      // Clear cart and show modal, then redirect to lacak
       setCart([]); 
       setCurrentStep("katalog");
-      setTrackingStatus(1); 
-      setActivePage("lacak"); 
+      setTrackingStatus(1);
+      setIsCheckoutModalOpen(true); // Tampilkan notifikasi
+      // Redirect ke lacak setelah 2.5 detik
+      setTimeout(() => {
+        setIsCheckoutModalOpen(false);
+        setActivePage("lacak");
+      }, 2500);
       setCheckoutSuccess("Pesanan Anda berhasil dibuat!");
 
     } catch (error) {
@@ -247,12 +368,48 @@ const OrderMember = ({ onLogout }) => {
     }
   };
 
-  const handleSubmitReview = (productId) => {
+  const handleSubmitReview = async (item) => {
+    const productId = item.id;
     if (!ratings[productId]) {
       alert("Silakan berikan rating bintang terlebih dahulu.");
       return;
     }
-    setSubmittedReviews(prev => [...prev, productId]);
+    setIsSubmittingReview(true);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const sb = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY
+      );
+
+      const starRating = ratings[productId];
+      const sentiment = starRating >= 4 ? 'Positive' : starRating === 3 ? 'Neutral' : 'Negative';
+
+      const payload = {
+        customer_name: userProfile.name || 'Member',
+        product_id: String(productId).length === 36 ? productId : null, // UUID check
+        rating: starRating,
+        comment: feedbacks[productId] || '',
+        sentiment,
+        status: 'Pending',
+        date: new Date().toISOString().split('T')[0],
+      };
+
+      const { data, error } = await sb
+        .from('feedback')
+        .insert([payload])
+        .select();
+
+      if (error) throw error;
+
+      setSubmittedReviews(prev => [...prev, productId]);
+      console.log('✅ Review saved to Supabase:', data);
+    } catch (err) {
+      console.error('❌ Error saving review:', err);
+      alert(`Gagal mengirim ulasan: ${err.message}`);
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   if (isLoading) {
@@ -268,6 +425,28 @@ const OrderMember = ({ onLogout }) => {
 
   return (
     <div className="bg-[#FAF9F5] min-h-screen text-[#262626] font-sans antialiased flex flex-col justify-between w-full">
+      
+      {/* ===== MODAL: NOTIFIKASI CHECKOUT BERHASIL ===== */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full mx-4 text-center shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiCheckCircle className="w-10 h-10 text-emerald-500" />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#4F5C18] block mb-2">Lumière Cosmetics</span>
+            <h3 className="font-serif font-black text-2xl text-[#262626] mb-3">Pesanan Diproses!</h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-4">
+              Pesanan Anda telah diterima dan sedang diproses oleh tim kami.<br/>
+              Anda akan diarahkan ke halaman pelacakan.
+            </p>
+            <div className="flex gap-1 justify-center">
+              {[0,1,2].map(i => (
+                <div key={i} className="w-2 h-2 bg-[#4F5C18] rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* ================= BAR NAVBAR UTAMA ================= */}
       <header className="bg-white/80 backdrop-blur-md border-b border-[#EAE9E1] sticky top-0 z-50 text-left">
@@ -452,9 +631,36 @@ const OrderMember = ({ onLogout }) => {
                       <span className="text-xs text-slate-400 block font-bold uppercase tracking-wider">No. Resi Pengiriman</span>
                       <h3 className="font-serif text-xl font-black text-[#262626]">{activeOrder.orderId}</h3>
                     </div>
-                    <div className="text-left sm:text-right">
-                      <span className="text-[10px] text-slate-400 block font-black uppercase">Metode Kurir</span>
-                      <span className="text-xs font-black text-[#4F5C18]">{activeOrder.courier}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-left sm:text-right">
+                        <span className="text-[10px] text-slate-400 block font-black uppercase">Metode Kurir</span>
+                        <span className="text-xs font-black text-[#4F5C18]">{activeOrder.courier}</span>
+                      </div>
+                      {/* Tombol refresh tracking dari Supabase */}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { createClient } = await import('@supabase/supabase-js');
+                            const sb = createClient(
+                              import.meta.env.VITE_SUPABASE_URL,
+                              import.meta.env.VITE_SUPABASE_ANON_KEY
+                            );
+                            const { data } = await sb
+                              .from('orders')
+                              .select('tracking_status, status')
+                              .eq('order_id', activeOrder.orderId)
+                              .single();
+                            if (data) {
+                              setTrackingStatus(data.tracking_status || 1);
+                              setActiveOrder(prev => ({ ...prev, tracking_status: data.tracking_status || 1 }));
+                            }
+                          } catch (e) { console.warn('Refresh tracking error:', e); }
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-[#FAF9F5] border border-[#EAE9E1] text-[#4F5C18] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#4F5C18] hover:text-white transition-all cursor-pointer shrink-0"
+                        title="Cek status terbaru dari admin"
+                      >
+                        <FiSettings size={11} className="animate-spin-slow" /> Refresh
+                      </button>
                     </div>
                   </div>
 
@@ -503,23 +709,25 @@ const OrderMember = ({ onLogout }) => {
                   </div>
 
                   {trackingStatus < 4 && (
-                    <div className="bg-[#FAF9F5] border border-[#EAE9E1] p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-left gap-4">
-                      <span className="text-slate-500 font-medium">💡 *Tombol Simulasi Kurir:* Jalankan status paket secara berkala untuk keperluan testing dashboard.</span>
-                      <button onClick={() => setTrackingStatus(p => Math.min(p + 1, 4))} className="bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-wider text-[9px] px-3.5 py-2 rounded border-none cursor-pointer shadow-xs shrink-0">Perbarui Status Kurir</button>
+                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-3 text-xs text-left">
+                      <FiClock className="w-5 h-5 text-blue-400 shrink-0" />
+                      <span className="text-blue-700 font-medium">Admin sedang memproses pengiriman paket Anda. Status akan diperbarui secara otomatis.</span>
                     </div>
                   )}
                 </div>
 
-                {/* AREA RATING REVIEW JIKA BARANG SUDAH SAMPAI */}
-                {trackingStatus === 4 && (
-                  <div className="bg-white border border-[#EAE9E1] rounded-2xl p-6 md:p-8 space-y-6 shadow-xs animate-in fade-in duration-500">
-                    <div className="border-b border-[#EAE9E1] pb-4 flex items-center gap-3">
-                      <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><FiMessageSquare size={18} /></div>
-                      <div>
-                        <h4 className="font-serif text-lg font-black text-[#262626]">Paket Telah Sampai! Tulis Ulasan Anda</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">Berikan nilai kepuasan untuk barang-barang premium yang sudah Anda terima.</p>
-                      </div>
+                {/* ===== AREA RATING & ULASAN (SELALU TAMPIL SETELAH ADA ORDER) ===== */}
+                <div className="bg-white border border-[#EAE9E1] rounded-2xl p-6 md:p-8 space-y-6 shadow-xs animate-in fade-in duration-500">
+                  <div className="border-b border-[#EAE9E1] pb-4 flex items-center gap-3">
+                    <div className="p-2 bg-amber-50 text-amber-500 rounded-lg"><FiStar size={18} /></div>
+                    <div>
+                      <h4 className="font-serif text-lg font-black text-[#262626]">Berikan Ulasan Belanja Anda</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">Bagikan pengalaman belanja Anda agar kami bisa terus berkembang.</p>
                     </div>
+                  </div>
+
+                  {/* Jika ada item di order, tampilkan per produk */}
+                  {activeOrder.items && activeOrder.items.length > 0 ? (
                     <div className="space-y-4">
                       {activeOrder.items.map((item) => {
                         const isReviewed = submittedReviews.includes(item.id);
@@ -527,27 +735,59 @@ const OrderMember = ({ onLogout }) => {
                           <div key={item.id} className="border border-[#EAE9E1] p-4 rounded-xl bg-[#FAF9F5]/50 flex flex-col sm:flex-row gap-5 justify-between items-center">
                             <div className="flex items-center gap-4 max-w-sm w-full text-left">
                               <div className="w-16 h-16 rounded-xl bg-white border border-[#EAE9E1] overflow-hidden shrink-0">
-                                <img src={item.img} alt={item.title} className="w-full h-full object-cover" />
+                                <img 
+                                  src={item.img_url || item.img || getFallbackImg(item.tag)} 
+                                  alt={item.title} 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { e.target.src = getFallbackImg(item.tag); }}
+                                />
                               </div>
                               <div>
-                                <span className="text-[8px] bg-white border border-gray-250 px-2 py-0.5 rounded font-black text-[#4F5C18] uppercase">{item.tag}</span>
+                                <span className="text-[8px] bg-white border border-gray-200 px-2 py-0.5 rounded font-black text-[#4F5C18] uppercase">{item.tag}</span>
                                 <h5 className="font-black text-xs text-[#262626] mt-1">{item.title}</h5>
                               </div>
                             </div>
                             <div className="flex-1 space-y-2 w-full sm:w-auto">
                               {isReviewed ? (
-                                <span className="text-xs text-emerald-600 font-bold block text-left sm:text-right">✓ Ulasan produk ini berhasil dikirim.</span>
+                                <div className="text-left sm:text-right space-y-1">
+                                  <div className="flex gap-0.5 justify-start sm:justify-end">
+                                    {[1,2,3,4,5].map(s => (
+                                      <FiStar key={s} size={14} className={s <= (ratings[item.id] || 0) ? "text-amber-500 fill-amber-500" : "text-slate-200"} />
+                                    ))}
+                                  </div>
+                                  <span className="text-xs text-emerald-600 font-bold block">✓ Ulasan berhasil dikirim ke admin.</span>
+                                </div>
                               ) : (
                                 <>
                                   <div className="flex gap-1 justify-start sm:justify-end">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                       <button key={star} type="button" onClick={() => setRatings(p => ({...p, [item.id]: star}))} className="bg-transparent border-none p-0 cursor-pointer">
-                                        <FiStar size={16} className={star <= (ratings[item.id] || 0) ? "text-amber-500 fill-amber-500" : "text-slate-300"} />
+                                        <FiStar size={20} className={star <= (ratings[item.id] || 0) ? "text-amber-500 fill-amber-500" : "text-slate-300 hover:text-amber-300 transition-colors"} />
                                       </button>
                                     ))}
                                   </div>
-                                  <textarea placeholder="Tulis testimoni Anda mengenai produk ini..." value={feedbacks[item.id] || ""} onChange={(e) => setFeedbacks(p => ({...p, [item.id]: e.target.value}))} className="w-full bg-white border border-[#EAE9E1] text-xs p-2.5 rounded-lg focus:outline-none resize-none" rows={2} />
-                                  <div className="flex justify-end"><button onClick={() => handleSubmitReview(item.id)} className="bg-[#262626] hover:bg-[#4F5C18] text-white border-none cursor-pointer font-black text-[9px] uppercase tracking-wider px-3.5 py-2 rounded shadow-xs">Kirim Ulasan</button></div>
+                                  {ratings[item.id] && (
+                                    <p className="text-[9px] text-right text-slate-400 font-bold uppercase">
+                                      {ratings[item.id] >= 4 ? '😊 Positif' : ratings[item.id] === 3 ? '😐 Netral' : '😞 Negatif'}
+                                    </p>
+                                  )}
+                                  <textarea
+                                    placeholder="Ceritakan pengalaman Anda dengan produk ini..."
+                                    value={feedbacks[item.id] || ""}
+                                    onChange={(e) => setFeedbacks(p => ({...p, [item.id]: e.target.value}))}
+                                    className="w-full bg-white border border-[#EAE9E1] text-xs p-2.5 rounded-lg focus:outline-none resize-none focus:border-[#4F5C18] transition-colors"
+                                    rows={2}
+                                  />
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={() => handleSubmitReview(item)}
+                                      disabled={isSubmittingReview || !ratings[item.id]}
+                                      className="bg-[#262626] hover:bg-[#4F5C18] disabled:opacity-40 disabled:cursor-not-allowed text-white border-none cursor-pointer font-black text-[9px] uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+                                    >
+                                      {isSubmittingReview ? <FiLoader size={10} className="animate-spin" /> : <FiStar size={10} />}
+                                      {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
+                                    </button>
+                                  </div>
                                 </>
                               )}
                             </div>
@@ -555,12 +795,62 @@ const OrderMember = ({ onLogout }) => {
                         );
                       })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    /* Form feedback general — tampil jika items tidak tersedia */
+                    <div className="space-y-4">
+                      <p className="text-xs text-slate-500 bg-[#FAF9F5] border border-[#EAE9E1] rounded-xl p-3">
+                        💬 Bagaimana keseluruhan pengalaman belanja Anda bersama Lumière?
+                      </p>
+                      <div className="flex gap-2 justify-center py-2">
+                        {[1,2,3,4,5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRatings(p => ({ ...p, general: star }))}
+                            className="bg-transparent border-none p-0 cursor-pointer"
+                          >
+                            <FiStar
+                              size={28}
+                              className={star <= (ratings.general || 0) ? "text-amber-500 fill-amber-500" : "text-slate-300 hover:text-amber-300 transition-colors"}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      {ratings.general && (
+                        <p className="text-[10px] text-center text-slate-400 font-bold uppercase">
+                          {ratings.general >= 4 ? '😊 Positif' : ratings.general === 3 ? '😐 Netral' : '😞 Negatif'}
+                        </p>
+                      )}
+                      <textarea
+                        placeholder="Ceritakan pengalaman belanja Anda..."
+                        value={feedbacks.general || ""}
+                        onChange={(e) => setFeedbacks(p => ({ ...p, general: e.target.value }))}
+                        className="w-full bg-white border border-[#EAE9E1] text-xs p-3 rounded-xl focus:outline-none resize-none focus:border-[#4F5C18] transition-colors"
+                        rows={3}
+                      />
+                      {submittedReviews.includes('general') ? (
+                        <p className="text-xs text-emerald-600 font-bold text-center">✓ Terima kasih! Ulasan Anda sudah dikirim ke admin.</p>
+                      ) : (
+                        <div className="flex justify-end">
+                          <button
+                            disabled={isSubmittingReview || !ratings.general}
+                            onClick={() => handleSubmitReview({ id: 'general', title: 'General Feedback', tag: '' })}
+                            className="bg-[#262626] hover:bg-[#4F5C18] disabled:opacity-40 disabled:cursor-not-allowed text-white border-none cursor-pointer font-black text-[9px] uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+                          >
+                            {isSubmittingReview ? <FiLoader size={10} className="animate-spin" /> : <FiStar size={10} />}
+                            {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
               </div>
             )}
           </div>
         )}
+
 
         {/* --- HALAMAN 3: KATALOG KATALOG DAN PROSES CHECKOUT --- */}
         {activePage === "katalog" && (
@@ -605,19 +895,20 @@ const OrderMember = ({ onLogout }) => {
                             </span>
                           )}
 
-                          {product.img ? (
-                            <img 
-                              src={product.img} 
-                              alt={product.title} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
+                          {/* Gambar produk dengan fallback per kategori */}
+                          <img 
+                            src={product.img_url || product.img || getFallbackImg(product.tag)} 
+                            alt={product.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              const fallback = getFallbackImg(product.tag);
+                              if (e.target.src !== fallback) {
+                                e.target.src = fallback;
+                              }
+                            }}
+                          />
 
-                          <div className="hidden flex-col items-center justify-center text-[#262626]/60">
+                          <div className={`product-placeholder flex-col items-center justify-center text-[#262626]/60 ${product.img ? 'hidden' : 'flex'}`}>
                             <FiShoppingBag size={24} className="mb-2" />
                             <span className="text-[9px] tracking-widest uppercase font-black opacity-40">Lumière Atelier</span>
                           </div>

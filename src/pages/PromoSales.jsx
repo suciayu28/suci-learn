@@ -44,6 +44,8 @@ const PromoSales = () => {
     img_url: ""
   };
   const [newProduct, setNewProduct] = useState(defaultNewProductState);
+  const [isSaving, setIsSaving] = useState(false); // Loading state for save
+  const [formError, setFormError] = useState(""); // Error message state
 
   const titleInputRef = useRef(null);
 
@@ -130,39 +132,58 @@ const PromoSales = () => {
 
   const handleSaveCatalog = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
+    setFormError("");
+
     if (!newProduct.title || !newProduct.original_price || !newProduct.discount_price) {
-      alert("Mohon lengkapi nama produk dan harga terlebih dahulu.");
+      setFormError("Mohon lengkapi nama produk dan harga terlebih dahulu.");
+      setIsSaving(false);
       return;
     }
 
+    if (parseInt(newProduct.discount_price) >= parseInt(newProduct.original_price)) {
+      setFormError("Harga diskon harus lebih kecil dari harga asli.");
+      setIsSaving(false);
+      return;
+    }
+
+    const orig = parseInt(newProduct.original_price);
+    const disc = parseInt(newProduct.discount_price);
+    const discPct = orig > 0 ? Math.round(((orig - disc) / orig) * 100) : 0;
+
     const productData = {
       title: newProduct.title,
-      original_price: parseInt(newProduct.original_price),
-      discount_price: parseInt(newProduct.discount_price),
-      discount_percent: calculatedDiscountPercent(),
+      original_price: orig,
+      discount_price: disc,
+      discount_percent: discPct,
+      is_active: true,
       img_url: newProduct.img_url.trim() !== "" ? newProduct.img_url : "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=500&q=80"
     };
 
-    if (editingProduct) {
-      // PROSES EDIT
-      const { error } = await supabase
-        .from('promo_items')
-        .update(productData)
-        .eq('id', editingProduct.id);
-      if (error) console.error("Error updating product:", error);
-    } else {
-      // PROSES TAMBAH BARU KE SUPABASE
-      const { error } = await supabase
-        .from('promo_items')
-        .insert([productData]);
-      if (error) console.error("Error creating product:", error);
-    }
+    try {
+      if (editingProduct) {
+        const { error } = await supabase
+          .from('promo_items')
+          .update(productData)
+          .eq('id', editingProduct.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('promo_items')
+          .insert([productData]);
+        if (error) throw error;
+      }
 
-    // Ambil data terbaru dan tutup modal
-    await fetchPromoProducts();
-    setNewProduct(defaultNewProductState); 
-    setEditingProduct(null);
-    setIsFormOpen(false);
+      await fetchPromoProducts();
+      setNewProduct(defaultNewProductState); 
+      setEditingProduct(null);
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error saving promo product:", error);
+      setFormError(`Gagal menyimpan data: ${error.message || "Terjadi kesalahan"}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeletePromo = async (id, title) => {
@@ -355,8 +376,20 @@ const PromoSales = () => {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-[#4F5C18] hover:bg-[#3d4713] text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 mt-4">
-                <FiSave size={14} /> {editingProduct ? "Update Data Promo" : "Simpan Ke Etalase"}
+              {/* Pesan Error */}
+              {formError && (
+                <div className="bg-rose-50 text-rose-700 p-3 rounded-xl text-xs font-bold border border-rose-200">
+                  {formError}
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full bg-[#4F5C18] hover:bg-[#3d4713] text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSaving ? <FiPlus className="animate-spin" size={14} /> : <FiSave size={14} />} 
+                {isSaving ? "Menyimpan..." : (editingProduct ? "Update Data Promo" : "Simpan Ke Etalase")}
               </button>
             </form>
           </div>

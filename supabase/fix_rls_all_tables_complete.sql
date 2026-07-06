@@ -4,7 +4,16 @@
 -- Script ini untuk mengizinkan semua operasi di semua tabel
 -- Cocok untuk development, gunakan dengan bijak!
 
--- 1. Aktifkan RLS untuk semua tabel (jika belum aktif)
+-- 1. Tambahkan kolom admin_reply ke tabel feedback jika belum ada (untuk fitur balasan admin)
+ALTER TABLE IF EXISTS feedback ADD COLUMN IF NOT EXISTS admin_reply TEXT;
+
+-- 1b. FIX: Ubah kolom discount_percent di tabel promo_items dari GENERATED ALWAYS AS
+--     menjadi kolom biasa agar bisa diisi/dikalkulasi dari client.
+--     Jalankan ini jika menerima error "cannot insert into column discount_percent".
+ALTER TABLE IF EXISTS promo_items DROP COLUMN IF EXISTS discount_percent;
+ALTER TABLE IF EXISTS promo_items ADD COLUMN IF NOT EXISTS discount_percent NUMERIC;
+
+-- 2. Aktifkan RLS untuk semua tabel (jika belum aktif)
 ALTER TABLE IF EXISTS login ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS customers ENABLE ROW LEVEL SECURITY;

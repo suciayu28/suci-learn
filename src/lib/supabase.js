@@ -1,58 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 
 // ===============================================
-// LUMIÈRE ATELIER CRM - SUPABASE CLIENT
+// KONFIGURASI SUPABASE
 // ===============================================
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Ambil konfigurasi dari environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// ===============================================
-// VALIDASI KONFIGURASI AWAL
-// ===============================================
 let initializationError = null;
 
-if (!supabaseUrl || supabaseUrl.trim() === '') {
-  initializationError = 'VITE_SUPABASE_URL is missing or empty in .env file';
-  console.error('❌ [Supabase Error:', initializationError);
+// Validasi environment variables
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  initializationError = 'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env';
+  console.error('❌ [Supabase] Configuration error:', initializationError);
 }
 
-if (!supabaseAnonKey || supabaseAnonKey.trim() === '') {
-  initializationError = 'VITE_SUPABASE_ANON_KEY is missing or empty in .env file';
-  console.error('❌ [Supabase Error:', initializationError);
-}
+// Buat instance Supabase client
+export const supabase = !initializationError 
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 // ===============================================
-// INISIALISASI KLIEN SUPABASE
+// CUSTOM ERROR HANDLER
 // ===============================================
-let supabaseInstance = null;
-
-try {
-  if (!initializationError) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-      },
-    });
-    console.log('✅ [Supabase] Client initialized successfully');
-  }
-} catch (error) {
-  initializationError = `Failed to initialize Supabase client: ' + error.message;
-  console.error('❌ [Supabase] Initialization error:', error);
-}
-
-// ===============================================
-// EXPORT KLIEN UTAMA
-// ===============================================
-export const supabase = supabaseInstance;
-
-// ===============================================
-// UTILITAS PENANGANAN ERROR
-// ===============================================
-export class SupabaseError extends Error {
+class SupabaseError extends Error {
   constructor(message, code, details) {
     super(message);
     this.name = 'SupabaseError';
@@ -62,7 +32,7 @@ export class SupabaseError extends Error {
 }
 
 const handleSupabaseError = (error, context = 'Unknown operation') => {
-  console.error(`❌ [Supabase] ${context}:', error);
+  console.error(`❌ [Supabase] ${context}:`, error);
   return new SupabaseError(
     error.message || `${context} failed`,
     error.code || 'UNKNOWN_ERROR',
@@ -77,128 +47,87 @@ export const testConnection = async () => {
   if (initializationError) {
     return {
       success: false,
-      error: initializationError,
-      message: 'Client initialization failed'
+      error: initializationError
     };
   }
 
   try {
-    // Test 1: Ping Supabase health check
-    const { data: healthData, error: healthError } = await supabase
-      .from('products')
-      .select('count', { count: 'exact', head: true })
-      .limit(1);
-
-    if (healthError && healthError.code !== 'PGRST116') {
-      throw healthError;
-    }
-
-    // Test 2: Check auth status
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    console.log('✅ [Supabase] Connection test passed');
-
-    return {
-      success: true,
-      message: 'Successfully connected to Supabase',
-      hasActiveSession: !!user,
-      user: user || null,
-    };
+    const { data, error } = await supabase.from('products').select('count', { count: 'exact', head: true });
+    if (error) throw error;
+    return { success: true, data };
   } catch (error) {
     return {
       success: false,
-      error: error.message || 'Connection test failed',
-      details: error,
+      error: error.message
     };
   }
 };
 
 // ===============================================
-// API LAYER - AUTHENTICATION
+// API LAYER - AUTH (CUSTOM)
 // ===============================================
 export const authAPI = {
+  // Login manual ke tabel login
   async signInWithEmail({ email, password }) {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase
+        .from('login')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
       if (error) throw handleSupabaseError(error, 'Sign in');
+      
+      if (!data) {
+        throw new SupabaseError('Invalid credentials', 'INVALID_CREDENTIALS', null);
+      }
+
       return data;
     } catch (error) {
       throw error;
     }
   },
 
-  async signUp({ email, password, options = {} }) {
+  // Register manual ke tabel login
+  async signUpWithEmail({ email, password, role }) {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options,
-      });
+      const { data, error } = await supabase
+        .from('login')
+        .insert([{
+          email,
+          password,
+          role: role || 'customer',
+          name: email.split('@')[0]
+        }])
+        .select();
+
       if (error) throw handleSupabaseError(error, 'Sign up');
-      return data;
+      return data[0];
     } catch (error) {
       throw error;
     }
   },
 
-  async signOut() {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw handleSupabaseError(error, 'Sign out');
-      return true;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async resetPasswordForEmail(email, options = {}) {
-    try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, options);
-      if (error) throw handleSupabaseError(error, 'Reset password');
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async getCurrentUser() {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw handleSupabaseError(error, 'Get current user');
-      return user;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async getSession() {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw handleSupabaseError(error, 'Get session');
-      return session;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  onAuthStateChange(callback) {
-    return supabase.auth.onAuthStateChange(callback);
+  signOut() {
+    return { success: true };
   }
 };
 
 // ===============================================
-// API LAYER - PRODUK
+// API LAYER - PRODUCTS
 // ===============================================
 export const productsAPI = {
   async getAllProducts(filters = {}) {
     try {
       let query = supabase.from('products').select('*');
 
-      if (filters.isActive !== undefined) {
-        query = query.eq('is_active', filters.isActive);
-      }
       if (filters.tag) {
         query = query.eq('tag', filters.tag);
+      }
+
+      if (filters.isActive !== undefined) {
+        query = query.eq('is_active', filters.isActive);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -279,7 +208,7 @@ export const promoAPI = {
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 // ===============================================
@@ -331,13 +260,14 @@ export const customersAPI = {
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 // ===============================================
 // API LAYER - ORDERS
 // ===============================================
 export const ordersAPI = {
+  supabase, // expose client for direct use
   async getAllOrders(filters = {}) {
     try {
       let query = supabase.from('orders').select('*');
@@ -417,7 +347,7 @@ export const ordersAPI = {
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 // ===============================================
@@ -448,7 +378,7 @@ export const orderItemsAPI = {
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 // ===============================================
@@ -482,7 +412,7 @@ export const feedbackAPI = {
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 // ===============================================
@@ -498,5 +428,5 @@ export default {
   ordersAPI,
   orderItemsAPI,
   feedbackAPI,
-  SupabaseError,
+  SupabaseError
 };
