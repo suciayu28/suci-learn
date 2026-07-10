@@ -34,6 +34,7 @@ const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
 const Login = React.lazy(() => import("./pages/auth/Login"));
 const Register = React.lazy(() => import("./pages/auth/Register"));
 const Forgot = React.lazy(() => import("./pages/auth/Forgot"));
+const CustomerOrderHistory = React.lazy(() => import("./pages/CustomerOrderHistory"));
 
 // Debug & Utilities
 const SupabaseDebugger = React.lazy(() => import("./pages/SupabaseDebugger"));
@@ -112,6 +113,7 @@ function App() {
         {/* 3. CORE AUTHENTICATION & MEMBER STANDALONE AREA (FULL SCREEN) */}
         {/* Mengeluarkan halaman auth & order-member ke tingkat atas bebas agar simetris penuh monitor */}
         <Route path="/order-member" element={<OrderMember />} /> {/* ✅ SEKARANG DI SINI (FULL PAGE TANPA SIDEBAR) */}
+        <Route path="/order-history" element={<CustomerOrderHistory />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<Forgot />} />
