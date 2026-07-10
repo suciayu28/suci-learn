@@ -1869,6 +1869,51 @@ const LumiereShowcase = () => {
         </div>
       )}
 
+      {/* ============================================================ */}
+      {/* WHATSAPP FLOATING BUTTON - Sales Automation                  */}
+      {/* ============================================================ */}
+      <a
+        href="https://wa.me/6281234567890?text=Halo%20Lumier%20Cosmetics!%20Saya%20ingin%20bertanya%20mengenai%20produk%20anda."
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Hubungi Kami via WhatsApp"
+        style={{
+          position: "fixed",
+          bottom: "28px",
+          right: "28px",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          backgroundColor: "#25D366",
+          color: "#fff",
+          padding: "14px 20px",
+          borderRadius: "50px",
+          boxShadow: "0 8px 30px rgba(37,211,102,0.45)",
+          textDecoration: "none",
+          fontFamily: "inherit",
+          fontWeight: 700,
+          fontSize: "12px",
+          letterSpacing: "0.05em",
+          transition: "transform 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = "scale(1.07)";
+          e.currentTarget.style.boxShadow = "0 12px 40px rgba(37,211,102,0.55)";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 30px rgba(37,211,102,0.45)";
+        }}
+      >
+        {/* WhatsApp SVG Icon */}
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 3C9.373 3 4 8.373 4 15c0 2.385.668 4.61 1.832 6.51L4 29l7.697-1.81A12.93 12.93 0 0016 28c6.627 0 12-5.373 12-12S22.627 3 16 3z" fill="#fff"/>
+          <path d="M22.003 19.207c-.308-.154-1.82-.898-2.103-.999-.283-.102-.488-.154-.694.154-.205.308-.795.999-.974 1.205-.18.205-.359.231-.667.077-.308-.154-1.3-.479-2.476-1.528-.915-.816-1.532-1.823-1.712-2.131-.18-.308-.019-.474.135-.627.138-.138.308-.359.462-.538.154-.18.205-.308.308-.513.102-.205.051-.385-.026-.538-.077-.154-.694-1.672-.951-2.29-.25-.601-.505-.52-.694-.53l-.59-.01c-.205 0-.538.077-.82.385-.283.308-1.077 1.052-1.077 2.566s1.103 2.977 1.257 3.182c.154.205 2.17 3.313 5.258 4.644.735.317 1.308.506 1.755.648.737.234 1.409.201 1.94.122.591-.088 1.82-.744 2.077-1.462.257-.718.257-1.333.18-1.462-.077-.128-.283-.205-.59-.359z" fill="#25D366"/>
+        </svg>
+        Hubungi Kami
+      </a>
+
     </div>
   );
 };
