@@ -1873,7 +1873,7 @@ const LumiereShowcase = () => {
       {/* WHATSAPP FLOATING BUTTON - Sales Automation                  */}
       {/* ============================================================ */}
       <a
-        href="https://wa.me/6281234567890?text=Halo%20Lumier%20Cosmetics!%20Saya%20ingin%20bertanya%20mengenai%20produk%20anda."
+        href="https://wa.me/62877573317?text=Halo%20Lumier%20Cosmetics!%20Saya%20ingin%20bertanya%20mengenai%20produk%20anda."
         target="_blank"
         rel="noopener noreferrer"
         title="Hubungi Kami via WhatsApp"

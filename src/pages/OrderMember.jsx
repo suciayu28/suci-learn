@@ -473,6 +473,12 @@ const OrderMember = ({ onLogout }) => {
               )}
             </button>
             <button 
+              onClick={() => window.location.href = "/order-history"} 
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border-none cursor-pointer text-slate-500 hover:bg-[#FAF9F5] bg-transparent`}
+            >
+              Riwayat
+            </button>
+            <button 
               onClick={() => setActivePage("profil")} 
               className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border-none cursor-pointer ${activePage === "profil" ? "bg-[#4F5C18] text-white" : "text-slate-500 hover:bg-[#FAF9F5] bg-transparent"}`}
             >
